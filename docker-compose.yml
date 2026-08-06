@@ -1,0 +1,44 @@
+# Local development stack: `docker compose up` gives you a Postgres instance shaped for Vestige
+# plus the app itself, wired together with exactly the environment variables application.yml
+# already documents defaults for - nothing here is a second source of truth for configuration.
+#
+# Testcontainers-backed integration tests (`mvn verify -Pintegration`) do not use this file - they
+# start and tear down their own disposable Postgres container (see AbstractIntegrationTest).
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: vestige
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - vestige-postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d vestige"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  app:
+    build: .
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      # Flyway connects as the database owner to run migrations (CREATE ROLE, FORCE ROW LEVEL
+      # SECURITY); the app itself connects as vestige_app, the restricted role V2 creates - see
+      # V2__row_level_security.sql and TenantRoutingDataSource for why the two must differ.
+      VESTIGE_DB_URL: jdbc:postgresql://postgres:5432/vestige
+      VESTIGE_APP_DB_USER: vestige_app
+      VESTIGE_APP_DB_PASSWORD: vestige_app_dev_password
+      VESTIGE_MIGRATION_DB_URL: jdbc:postgresql://postgres:5432/vestige
+      VESTIGE_MIGRATION_DB_USER: postgres
+      VESTIGE_MIGRATION_DB_PASSWORD: postgres
+    ports:
+      - "8080:8080"
+
+volumes:
+  vestige-postgres-data:
