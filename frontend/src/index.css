@@ -1,0 +1,175 @@
+:root {
+  --text: #4b5058;
+  --text-h: #14161a;
+  --text-dim: #767c87;
+  --bg: #f7f7f8;
+  --surface: #ffffff;
+  --border: #e1e2e6;
+  --code-bg: #f0f0f2;
+  --accent: #6d3bff;
+  --accent-bg: rgba(109, 59, 255, 0.1);
+  --accent-fg: #ffffff;
+
+  --info: #5b7fdb;
+  --minor: #4c9a6a;
+  --major: #c78a1f;
+  --critical: #d1653d;
+  --blocker: #c23d5b;
+
+  --success: #1e8e5a;
+  --success-bg: rgba(30, 142, 90, 0.12);
+  --danger: #c23d3d;
+  --danger-bg: rgba(194, 61, 61, 0.1);
+
+  --sans: system-ui, 'Segoe UI', Roboto, sans-serif;
+  --mono: ui-monospace, Consolas, monospace;
+
+  font: 15px/1.5 var(--sans);
+  color-scheme: light dark;
+  color: var(--text);
+  background: var(--bg);
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --text: #b6bac2;
+    --text-h: #f1f2f4;
+    --text-dim: #82868f;
+    --bg: #101114;
+    --surface: #17181c;
+    --border: #2a2c32;
+    --code-bg: #1d1f24;
+    --accent: #a688ff;
+    --accent-bg: rgba(166, 136, 255, 0.16);
+    --accent-fg: #101114;
+
+    --success-bg: rgba(60, 179, 128, 0.16);
+    --danger-bg: rgba(224, 100, 100, 0.14);
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+}
+
+h1,
+h2,
+h3,
+h4 {
+  font-family: var(--sans);
+  font-weight: 600;
+  color: var(--text-h);
+  margin: 0 0 0.5em;
+}
+
+h2 {
+  font-size: 1.25rem;
+}
+
+h3 {
+  font-size: 1.05rem;
+}
+
+h4 {
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-dim);
+}
+
+p {
+  margin: 0 0 0.75em;
+}
+
+a {
+  color: var(--accent);
+}
+
+code {
+  font-family: var(--mono);
+  font-size: 0.9em;
+  background: var(--code-bg);
+  border-radius: 4px;
+  padding: 0.1em 0.4em;
+}
+
+button {
+  font: inherit;
+  color: var(--accent-fg);
+  background: var(--accent);
+  border: none;
+  border-radius: 6px;
+  padding: 0.5em 1em;
+  cursor: pointer;
+}
+
+button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+button.secondary {
+  color: var(--text);
+  background: transparent;
+  border: 1px solid var(--border);
+}
+
+input,
+select,
+textarea {
+  font: inherit;
+  color: var(--text-h);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 0.45em 0.6em;
+}
+
+input:focus,
+select:focus,
+textarea:focus,
+button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3em;
+  font-size: 0.85rem;
+  color: var(--text-dim);
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+th,
+td {
+  text-align: left;
+  padding: 0.5em 0.6em;
+  border-bottom: 1px solid var(--border);
+}
+
+th {
+  color: var(--text-dim);
+  font-weight: 600;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+dl {
+  margin: 0;
+}
