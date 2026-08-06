@@ -1,0 +1,75 @@
+spring:
+  application:
+    name: vestige
+
+  datasource:
+    url: ${VESTIGE_DB_URL:jdbc:postgresql://localhost:5432/vestige}
+    username: ${VESTIGE_APP_DB_USER:vestige_app}
+    password: ${VESTIGE_APP_DB_PASSWORD:vestige_app_dev_password}
+    hikari:
+      pool-name: vestige-app-pool
+      maximum-pool-size: ${VESTIGE_DB_POOL_SIZE:10}
+
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        jdbc.batch_size: 1000
+        order_inserts: true
+        order_updates: true
+
+  flyway:
+    # Runs as the database owner, deliberately not vestige_app - see V2's migration comment.
+    url: ${VESTIGE_MIGRATION_DB_URL:jdbc:postgresql://localhost:5432/vestige}
+    user: ${VESTIGE_MIGRATION_DB_USER:postgres}
+    password: ${VESTIGE_MIGRATION_DB_PASSWORD:postgres}
+    placeholders:
+      appPassword: ${VESTIGE_APP_DB_PASSWORD:vestige_app_dev_password}
+
+  servlet:
+    multipart:
+      max-file-size: 210MB
+      max-request-size: 210MB
+
+server:
+  port: ${PORT:8080}
+  # A blocked-looking upload (a huge SARIF body) should not park a thread for longer than a slow CI
+  # runner legitimately needs.
+  tomcat:
+    connection-timeout: 60s
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui
+
+vestige:
+  ingestion:
+    # §4.3: reports above this are rejected with 413 before a single byte is parsed.
+    max-report-bytes: 200MB
+    finding-batch-size: 1000
+  worker:
+    poll-interval: 500ms
+    lease-duration: 2m
+    max-attempts: 5
+    retry-base-delay: 250ms
+    retry-max-delay: 5m
+  matching:
+    weak-fingerprint-line-proximity: 25
+  github:
+    # Optional. Absent, rename resolution (§3.2) degrades gracefully to "no renames this run" and
+    # the webhook/check-run adapters log instead of calling out - see GitHubScmRenameResolver and
+    # GitHubCheckRunPublisher.
+    token: ${VESTIGE_GITHUB_TOKEN:}
+    webhook-secret: ${VESTIGE_GITHUB_WEBHOOK_SECRET:}
+
+logging:
+  level:
+    dev.youneskaouani.vestige: INFO
