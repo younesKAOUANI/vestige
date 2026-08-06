@@ -1,5 +1,6 @@
 package dev.youneskaouani.vestige.gate.service;
 
+import dev.youneskaouani.vestige.common.domain.Severity;
 import dev.youneskaouani.vestige.gate.domain.ConditionOutcome;
 import dev.youneskaouani.vestige.gate.domain.GateCondition;
 import dev.youneskaouani.vestige.gate.domain.GateInput;
@@ -16,6 +17,10 @@ import java.util.function.Predicate;
  * <p>A pure function: same gate and same input, same verdict, no database and no clock. Every
  * condition reports the number it measured and the threshold it was measured against, so a failing
  * gate is self-explanatory rather than an opaque red cross.
+ *
+ * <p>"New code" (§7) is whatever the matcher marked {@code newInThisRun} or
+ * {@code reopenedInThisRun} on {@link GateInput}; this class never looks at a diff, which is the
+ * whole point of ADR-008.
  */
 public final class QualityGateEvaluator {
 
@@ -33,28 +38,21 @@ public final class QualityGateEvaluator {
 
     private ConditionOutcome evaluateCondition(GateCondition condition, GateInput input) {
         return switch (condition.type()) {
-            case NO_NEW_ISSUES_AT_OR_ABOVE_SEVERITY -> count(
+            case NEW_CRITICAL_ISSUES -> count(
                     condition,
                     input,
-                    issue -> issue.newInThisRun()
-                            && issue.severity().isAtLeast(condition.severityThreshold())
-                            && (!condition.changedLinesOnly() || issue.onChangedLine()),
-                    0);
-            case MAX_NEW_ISSUES -> count(
+                    issue -> issue.newInThisRun() && issue.severity().isAtLeast(Severity.CRITICAL));
+            case NEW_ISSUES_TOTAL -> count(condition, input, GateInput.GateIssue::newInThisRun);
+            case REOPENED_ISSUES -> count(condition, input, GateInput.GateIssue::reopenedInThisRun);
+            case TOTAL_BLOCKER_ISSUES -> count(
                     condition,
                     input,
-                    GateInput.GateIssue::newInThisRun,
-                    condition.countThreshold());
-            case NO_REOPENED_ISSUES -> count(
-                    condition, input, GateInput.GateIssue::reopenedInThisRun, 0);
+                    issue -> issue.status().isOutstanding() && issue.severity().isAtLeast(Severity.BLOCKER));
         };
     }
 
     private ConditionOutcome count(
-            GateCondition condition,
-            GateInput input,
-            Predicate<GateInput.GateIssue> matches,
-            long threshold) {
+            GateCondition condition, GateInput input, Predicate<GateInput.GateIssue> matches) {
 
         List<String> offenders = input.issues().stream()
                 .filter(GateInput.GateIssue::countsAgainstTheGate)
@@ -62,11 +60,15 @@ public final class QualityGateEvaluator {
                 .map(GateInput.GateIssue::issueId)
                 .toList();
 
-        GateStatus status = offenders.size() > threshold ? GateStatus.FAIL : GateStatus.PASS;
+        GateStatus status = offenders.size() > condition.threshold() ? GateStatus.FAIL : GateStatus.PASS;
         List<String> reported = offenders.size() > ConditionOutcome.MAX_REPORTED_ISSUES
                 ? offenders.subList(0, ConditionOutcome.MAX_REPORTED_ISSUES)
                 : offenders;
         return new ConditionOutcome(
-                condition, status, offenders.size(), threshold, status == GateStatus.FAIL ? reported : List.of());
+                condition,
+                status,
+                offenders.size(),
+                condition.threshold(),
+                status == GateStatus.FAIL ? reported : List.of());
     }
 }

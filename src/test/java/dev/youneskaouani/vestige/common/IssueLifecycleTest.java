@@ -20,24 +20,25 @@ class IssueLifecycleTest {
     }
 
     @Test
-    @DisplayName("a resolved issue that is sighted again is reopened, not opened afresh")
-    void sightingReopensAResolvedIssue() {
-        assertThat(IssueLifecycle.afterSighting(IssueStatus.RESOLVED)).isEqualTo(IssueStatus.REOPENED);
-        assertThat(IssueLifecycle.isReopening(IssueStatus.RESOLVED, IssueStatus.REOPENED)).isTrue();
+    @DisplayName("a fixed issue that is sighted again is reopened, not opened afresh")
+    void sightingReopensAFixedIssue() {
+        assertThat(IssueLifecycle.afterSighting(IssueStatus.RESOLVED_FIXED)).isEqualTo(IssueStatus.REOPENED);
+        assertThat(IssueLifecycle.isReopening(IssueStatus.RESOLVED_FIXED, IssueStatus.REOPENED)).isTrue();
         assertThat(IssueLifecycle.isReopening(IssueStatus.OPEN, IssueStatus.OPEN)).isFalse();
     }
 
     @Test
-    @DisplayName("an issue that is no longer reported is resolved")
+    @DisplayName("an outstanding issue that is no longer reported is auto-resolved as fixed")
     void disappearanceResolves() {
-        assertThat(IssueLifecycle.afterDisappearance(IssueStatus.OPEN)).isEqualTo(IssueStatus.RESOLVED);
-        assertThat(IssueLifecycle.afterDisappearance(IssueStatus.REOPENED)).isEqualTo(IssueStatus.RESOLVED);
-        assertThat(IssueLifecycle.afterDisappearance(IssueStatus.RESOLVED)).isEqualTo(IssueStatus.RESOLVED);
+        assertThat(IssueLifecycle.afterDisappearance(IssueStatus.OPEN)).isEqualTo(IssueStatus.RESOLVED_FIXED);
+        assertThat(IssueLifecycle.afterDisappearance(IssueStatus.REOPENED)).isEqualTo(IssueStatus.RESOLVED_FIXED);
+        assertThat(IssueLifecycle.afterDisappearance(IssueStatus.RESOLVED_FIXED))
+                .isEqualTo(IssueStatus.RESOLVED_FIXED);
     }
 
     @ParameterizedTest
-    @EnumSource(names = {"ACCEPTED", "FALSE_POSITIVE"})
-    @DisplayName("the pipeline never overwrites a human triage decision")
+    @EnumSource(names = {"RESOLVED_FALSE_POSITIVE", "RESOLVED_WONT_FIX"})
+    @DisplayName("the matcher never overwrites a human triage decision, on sighting or on disappearance")
     void neverOverwritesAHumanDecision(IssueStatus decided) {
         assertThat(IssueLifecycle.afterSighting(decided)).isEqualTo(decided);
         assertThat(IssueLifecycle.afterDisappearance(decided)).isEqualTo(decided);
@@ -48,10 +49,13 @@ class IssueLifecycleTest {
     void classifiesStatuses() {
         assertThat(IssueStatus.OPEN.isOutstanding()).isTrue();
         assertThat(IssueStatus.REOPENED.isOutstanding()).isTrue();
-        assertThat(IssueStatus.RESOLVED.isOutstanding()).isFalse();
-        assertThat(IssueStatus.ACCEPTED.isSilenced()).isTrue();
-        assertThat(IssueStatus.FALSE_POSITIVE.isSilenced()).isTrue();
+        assertThat(IssueStatus.RESOLVED_FIXED.isOutstanding()).isFalse();
+        assertThat(IssueStatus.RESOLVED_WONT_FIX.isSilenced()).isTrue();
+        assertThat(IssueStatus.RESOLVED_FALSE_POSITIVE.isSilenced()).isTrue();
         assertThat(IssueStatus.OPEN.isSilenced()).isFalse();
+        assertThat(IssueStatus.RESOLVED_FALSE_POSITIVE.requiresTriage()).isTrue();
+        assertThat(IssueStatus.RESOLVED_WONT_FIX.requiresTriage()).isTrue();
+        assertThat(IssueStatus.RESOLVED_FIXED.requiresTriage()).isFalse();
     }
 
     @Test
