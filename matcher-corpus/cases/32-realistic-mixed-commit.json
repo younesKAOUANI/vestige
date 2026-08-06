@@ -1,0 +1,48 @@
+{
+  "id": "32-realistic-mixed-commit",
+  "description": "A capstone fixture combining several shapes in one commit, the way a real pull request usually looks: an import added (shifts everything), one method's local variable renamed (identity_fp still resolves it), a second, unrelated issue fixed outright, and a third, brand new issue introduced. All four outcomes must be classified correctly in the same matching pass.",
+  "refactorShape": "other",
+  "renames": {},
+  "before": [
+    {
+      "id": "b1",
+      "ruleId": "java:S2259",
+      "filePath": "src/main/java/com/acme/OrderService.java",
+      "symbolPath": "com.acme.OrderService#findOrder",
+      "line": 8,
+      "snippet": "        return o.normalise();"
+    },
+    {
+      "id": "b2",
+      "ruleId": "java:S2184",
+      "filePath": "src/main/java/com/acme/OrderService.java",
+      "symbolPath": "com.acme.OrderService#total",
+      "line": 14,
+      "snippet": "            sum += order.amount();"
+    }
+  ],
+  "after": [
+    {
+      "id": "a1",
+      "ruleId": "java:S2259",
+      "filePath": "src/main/java/com/acme/OrderService.java",
+      "symbolPath": "com.acme.OrderService#findOrder",
+      "line": 9,
+      "snippet": "        return order.normalise();"
+    },
+    {
+      "id": "a2",
+      "ruleId": "java:S3655",
+      "filePath": "src/main/java/com/acme/OrderService.java",
+      "symbolPath": "com.acme.OrderService#latest",
+      "line": 13,
+      "snippet": "        return Optional.ofNullable(repository.latest());"
+    }
+  ],
+  "expectedMatches": [
+    {
+      "before": "b1",
+      "after": "a1"
+    }
+  ]
+}

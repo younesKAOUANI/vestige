@@ -1,0 +1,80 @@
+{
+  "id": "22-multiple-distinct-issues-one-file",
+  "description": "Four unrelated issues in the same file, three different rules, with an unrelated method added in between. Every issue must land on its own counterpart; none may cross-attach to a different line or rule.",
+  "refactorShape": "other",
+  "renames": {},
+  "before": [
+    {
+      "id": "b1",
+      "ruleId": "java:S2259",
+      "filePath": "src/main/java/com/acme/OrderService.java",
+      "symbolPath": "com.acme.OrderService#findOrder",
+      "line": 6,
+      "snippet": "        return order.normalise();"
+    },
+    {
+      "id": "b2",
+      "ruleId": "java:S2184",
+      "filePath": "src/main/java/com/acme/OrderService.java",
+      "symbolPath": "com.acme.OrderService#total",
+      "line": 12,
+      "snippet": "            sum += order.amount();"
+    },
+    {
+      "id": "b3",
+      "ruleId": "java:S1181",
+      "filePath": "src/main/java/com/acme/OrderService.java",
+      "symbolPath": "com.acme.OrderService#refresh",
+      "line": 20,
+      "snippet": "        } catch (Exception e) {"
+    }
+  ],
+  "after": [
+    {
+      "id": "a1",
+      "ruleId": "java:S2259",
+      "filePath": "src/main/java/com/acme/OrderService.java",
+      "symbolPath": "com.acme.OrderService#findOrder",
+      "line": 6,
+      "snippet": "        return order.normalise();"
+    },
+    {
+      "id": "a2",
+      "ruleId": "java:S2259",
+      "filePath": "src/main/java/com/acme/OrderService.java",
+      "symbolPath": "com.acme.OrderService#latest",
+      "line": 10,
+      "snippet": "        return repository.latest().normalise();"
+    },
+    {
+      "id": "a3",
+      "ruleId": "java:S2184",
+      "filePath": "src/main/java/com/acme/OrderService.java",
+      "symbolPath": "com.acme.OrderService#total",
+      "line": 16,
+      "snippet": "            sum += order.amount();"
+    },
+    {
+      "id": "a4",
+      "ruleId": "java:S1181",
+      "filePath": "src/main/java/com/acme/OrderService.java",
+      "symbolPath": "com.acme.OrderService#refresh",
+      "line": 24,
+      "snippet": "        } catch (Exception e) {"
+    }
+  ],
+  "expectedMatches": [
+    {
+      "before": "b1",
+      "after": "a1"
+    },
+    {
+      "before": "b2",
+      "after": "a3"
+    },
+    {
+      "before": "b3",
+      "after": "a4"
+    }
+  ]
+}

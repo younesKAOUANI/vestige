@@ -1,0 +1,32 @@
+{
+  "id": "15-add-overload-shifts-existing-method",
+  "description": "A new overload is inserted above an existing, already-flagged method, shifting the existing method down without changing it. identity_fp's symbol path is signature-scoped (\u00a73.2: 'com.acme.PaymentService#issueRefund'), so it is untouched by a sibling method appearing above it.",
+  "refactorShape": "add-overload",
+  "renames": {},
+  "before": [
+    {
+      "id": "b1",
+      "ruleId": "java:S3649",
+      "filePath": "src/main/java/com/acme/PaymentService.java",
+      "symbolPath": "com.acme.PaymentService#refund(Order)",
+      "line": 5,
+      "snippet": "        String sql = \"SELECT * FROM refunds WHERE id = \" + order.getId();"
+    }
+  ],
+  "after": [
+    {
+      "id": "a1",
+      "ruleId": "java:S3649",
+      "filePath": "src/main/java/com/acme/PaymentService.java",
+      "symbolPath": "com.acme.PaymentService#refund(Order)",
+      "line": 10,
+      "snippet": "        String sql = \"SELECT * FROM refunds WHERE id = \" + order.getId();"
+    }
+  ],
+  "expectedMatches": [
+    {
+      "before": "b1",
+      "after": "a1"
+    }
+  ]
+}

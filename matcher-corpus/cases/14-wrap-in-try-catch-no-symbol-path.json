@@ -1,0 +1,32 @@
+{
+  "id": "14-wrap-in-try-catch-no-symbol-path",
+  "description": "Same wrapping as case 13, without a symbol path - resolved by context_fp since the flagged line's own text is untouched.",
+  "refactorShape": "wrap-in-try-catch",
+  "renames": {},
+  "before": [
+    {
+      "id": "b1",
+      "ruleId": "java:S1181",
+      "filePath": "src/main/java/com/acme/OrderService.java",
+      "symbolPath": null,
+      "line": 5,
+      "snippet": "        repository.reload();"
+    }
+  ],
+  "after": [
+    {
+      "id": "a1",
+      "ruleId": "java:S1181",
+      "filePath": "src/main/java/com/acme/OrderService.java",
+      "symbolPath": null,
+      "line": 6,
+      "snippet": "            repository.reload();"
+    }
+  ],
+  "expectedMatches": [
+    {
+      "before": "b1",
+      "after": "a1"
+    }
+  ]
+}

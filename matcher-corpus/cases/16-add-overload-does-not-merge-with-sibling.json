@@ -1,0 +1,60 @@
+{
+  "id": "16-add-overload-does-not-merge-with-sibling",
+  "description": "The false-merge stress case: two overloads of the same method already carry their own, distinct issues (S1172 unused parameter) before a *third* overload is added. Signature-scoped symbol paths must keep all three apart - collapsing any two of them into one issue, or attaching the new overload's finding to either existing issue, is exactly the failure matcher-corpus exists to catch.",
+  "refactorShape": "add-overload",
+  "renames": {},
+  "before": [
+    {
+      "id": "b1",
+      "ruleId": "java:S1172",
+      "filePath": "src/main/java/com/acme/NotificationService.java",
+      "symbolPath": "com.acme.NotificationService#notify(User)",
+      "line": 4,
+      "snippet": "    public void notify(User user) {"
+    },
+    {
+      "id": "b2",
+      "ruleId": "java:S1172",
+      "filePath": "src/main/java/com/acme/NotificationService.java",
+      "symbolPath": "com.acme.NotificationService#notify(User,Template)",
+      "line": 8,
+      "snippet": "    public void notify(User user, Template template) {"
+    }
+  ],
+  "after": [
+    {
+      "id": "a1",
+      "ruleId": "java:S1172",
+      "filePath": "src/main/java/com/acme/NotificationService.java",
+      "symbolPath": "com.acme.NotificationService#notify(User)",
+      "line": 4,
+      "snippet": "    public void notify(User user) {"
+    },
+    {
+      "id": "a2",
+      "ruleId": "java:S1172",
+      "filePath": "src/main/java/com/acme/NotificationService.java",
+      "symbolPath": "com.acme.NotificationService#notify(User,Template)",
+      "line": 8,
+      "snippet": "    public void notify(User user, Template template) {"
+    },
+    {
+      "id": "a3",
+      "ruleId": "java:S1172",
+      "filePath": "src/main/java/com/acme/NotificationService.java",
+      "symbolPath": "com.acme.NotificationService#notify(User,Template,boolean)",
+      "line": 12,
+      "snippet": "    public void notify(User user, Template template, boolean urgent) {"
+    }
+  ],
+  "expectedMatches": [
+    {
+      "before": "b1",
+      "after": "a1"
+    },
+    {
+      "before": "b2",
+      "after": "a2"
+    }
+  ]
+}

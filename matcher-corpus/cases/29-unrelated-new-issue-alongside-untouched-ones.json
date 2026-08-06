@@ -1,0 +1,40 @@
+{
+  "id": "29-unrelated-new-issue-alongside-untouched-ones",
+  "description": "A commit that only adds new, unrelated code. Every pre-existing issue must be left exactly as it was; the new method's own issue must not attach to any of them.",
+  "refactorShape": "other",
+  "renames": {},
+  "before": [
+    {
+      "id": "b1",
+      "ruleId": "java:S1192",
+      "filePath": "src/main/java/com/acme/ReportGenerator.java",
+      "symbolPath": "com.acme.ReportGenerator#header",
+      "line": 5,
+      "snippet": "        String title = \"Report: \" + report.name();"
+    }
+  ],
+  "after": [
+    {
+      "id": "a1",
+      "ruleId": "java:S1192",
+      "filePath": "src/main/java/com/acme/ReportGenerator.java",
+      "symbolPath": "com.acme.ReportGenerator#header",
+      "line": 5,
+      "snippet": "        String title = \"Report: \" + report.name();"
+    },
+    {
+      "id": "a2",
+      "ruleId": "java:S1192",
+      "filePath": "src/main/java/com/acme/ReportGenerator.java",
+      "symbolPath": "com.acme.ReportGenerator#footer",
+      "line": 10,
+      "snippet": "        String stamp = \"Generated \" + report.timestamp();"
+    }
+  ],
+  "expectedMatches": [
+    {
+      "before": "b1",
+      "after": "a1"
+    }
+  ]
+}

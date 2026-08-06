@@ -1,0 +1,32 @@
+{
+  "id": "11-inline-variable-with-symbol-path",
+  "description": "A local variable is inlined into its single use site, substantially rewriting the flagged line's text while leaving the enclosing method alone - identity_fp survives a change context_fp cannot.",
+  "refactorShape": "inline-variable",
+  "renames": {},
+  "before": [
+    {
+      "id": "b1",
+      "ruleId": "java:S2259",
+      "filePath": "src/main/java/com/acme/OrderService.java",
+      "symbolPath": "com.acme.OrderService#findOrder",
+      "line": 6,
+      "snippet": "        return raw.normalise();"
+    }
+  ],
+  "after": [
+    {
+      "id": "a1",
+      "ruleId": "java:S2259",
+      "filePath": "src/main/java/com/acme/OrderService.java",
+      "symbolPath": "com.acme.OrderService#findOrder",
+      "line": 5,
+      "snippet": "        return repository.find(id).normalise();"
+    }
+  ],
+  "expectedMatches": [
+    {
+      "before": "b1",
+      "after": "a1"
+    }
+  ]
+}

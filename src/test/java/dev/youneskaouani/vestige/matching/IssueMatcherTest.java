@@ -1,467 +1,292 @@
 package dev.youneskaouani.vestige.matching;
 
-import static dev.youneskaouani.vestige.matching.MatchingFixtures.finding;
-import static dev.youneskaouani.vestige.matching.MatchingFixtures.snapshot;
-import static dev.youneskaouani.vestige.matching.MatchingFixtures.trackedFrom;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import dev.youneskaouani.vestige.common.domain.IssueStatus;
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
-import java.util.Random;
+import java.util.UUID;
 import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
+/**
+ * Unit tests for §3.3's algorithm in isolation. {@code matcher-corpus/} (see
+ * MatcherCorpusHarnessTest) exercises the same class end-to-end against ~30 hand-authored
+ * before/after code pairs; these tests instead pin down the algorithm's own rules - rung order,
+ * tie-breaking, determinism - with fingerprints built directly so each case is unambiguous about
+ * which rung is meant to fire.
+ */
 class IssueMatcherTest {
 
-    private static final String RULE = "java:S2259";
-    private static final String PATH = "src/main/java/Sample.java";
+    private static final int WEAK_PROXIMITY = 25;
 
-    private final IssueMatcher matcher = new IssueMatcher();
+    private final IssueMatcher matcher = new IssueMatcher(WEAK_PROXIMITY);
 
-    private static List<String> file() {
-        return List.of(
-                "package demo;",
-                "",
-                "public class Sample {",
-                "",
-                "    void handle(String input) {",
-                "        String value = lookup(input);",
-                "        System.out.println(value.length());",
-                "    }",
-                "}");
+    private static PreviousIssueCandidate previous(long seq, int line, Fingerprints fingerprints) {
+        return new PreviousIssueCandidate(UUID.randomUUID(), seq, line, fingerprints);
     }
 
-    private static List<String> fileWithHeader(int extraLines) {
-        List<String> lines = new ArrayList<>();
-        for (int i = 0; i < extraLines; i++) {
-            lines.add("// header " + i);
-        }
-        lines.addAll(file());
-        return lines;
+    private static IncomingFinding current(int ordinal, int line, Fingerprints fingerprints) {
+        return new IncomingFinding(ordinal, line, fingerprints);
+    }
+
+    private static Fingerprints fp(String ruleId, String path, String symbolPath, String snippet) {
+        return FingerprintFactory.compute(ruleId, path, symbolPath, snippet);
+    }
+
+    // ---------------------------------------------------------------------------------------
+    // Rung 1: identity_fp
+    // ---------------------------------------------------------------------------------------
+
+    @Test
+    @DisplayName("matches on identity_fp when the symbol path is stable, regardless of line and literal changes")
+    void matchesOnIdentityFingerprint() {
+        Fingerprints beforeFp = fp("java:S3649", "PaymentService.java", "PaymentService#refund", "sql = a + 1");
+        Fingerprints afterFp = fp("java:S3649", "PaymentService.java", "PaymentService#refund", "sql = b + 2");
+
+        PreviousIssueCandidate p = previous(1, 42, beforeFp);
+        IncomingFinding c = current(0, 58, afterFp);
+
+        MatchResult result = matcher.match(List.of(p), List.of(c));
+
+        assertThat(result.matches()).hasSize(1);
+        assertThat(result.matches().get(0).rung()).isEqualTo(Rung.IDENTITY);
+        assertThat(result.matches().get(0).previous()).isEqualTo(p);
+        assertThat(result.newIssues()).isEmpty();
+        assertThat(result.noLongerPresent()).isEmpty();
+    }
+
+    // ---------------------------------------------------------------------------------------
+    // Rung 2: context_fp (identity_fp unavailable - no symbol path)
+    // ---------------------------------------------------------------------------------------
+
+    @Test
+    @DisplayName("falls back to context_fp when the analyser supplies no symbol path")
+    void fallsBackToContextFingerprintWithoutASymbolPath() {
+        Fingerprints beforeFp = fp("java:S2259", "OrderService.java", null, "  return order.normalise();");
+        Fingerprints afterFp = fp("java:S2259", "OrderService.java", null, "return order.normalise();  ");
+
+        PreviousIssueCandidate p = previous(1, 12, beforeFp);
+        IncomingFinding c = current(0, 20, afterFp);
+
+        MatchResult result = matcher.match(List.of(p), List.of(c));
+
+        assertThat(result.matches()).hasSize(1);
+        assertThat(result.matches().get(0).rung()).isEqualTo(Rung.CONTEXT);
     }
 
     @Test
-    @DisplayName("the first analysis turns every finding into a new issue")
-    void firstRunHasNoMatches() {
-        SourceSnapshot snapshot = snapshot(PATH, file());
-        MatchResult result = matcher.match(
-                MatchRequest.firstRun(List.of(finding("f1", RULE, PATH, 7, snapshot))));
+    @DisplayName("identity_fp is tried before context_fp: strong evidence wins even when a weaker match exists too")
+    void identityBeatsContextWhenBothWouldMatch() {
+        String snippet = "return order.normalise();";
+        Fingerprints withSymbol = fp("java:S2259", "OrderService.java", "OrderService#find", snippet);
+
+        PreviousIssueCandidate viaIdentityAndContext = previous(1, 12, withSymbol);
+        IncomingFinding c = current(0, 12, withSymbol);
+
+        MatchResult result = matcher.match(List.of(viaIdentityAndContext), List.of(c));
+
+        assertThat(result.matches().get(0).rung()).isEqualTo(Rung.IDENTITY);
+    }
+
+    // ---------------------------------------------------------------------------------------
+    // Rung 3: weak_fp + line proximity
+    // ---------------------------------------------------------------------------------------
+
+    @Test
+    @DisplayName("falls back to weak_fp within the line-proximity window when neither stronger rung applies")
+    void fallsBackToWeakFingerprintWithinProximity() {
+        Fingerprints beforeFp = fp("java:S3649", "PaymentService.java", null, null);
+        Fingerprints afterFp = fp("java:S3649", "PaymentService.java", null, null);
+
+        PreviousIssueCandidate p = previous(1, 42, beforeFp);
+        IncomingFinding c = current(0, 42 + WEAK_PROXIMITY, afterFp);
+
+        MatchResult result = matcher.match(List.of(p), List.of(c));
+
+        assertThat(result.matches()).hasSize(1);
+        assertThat(result.matches().get(0).rung()).isEqualTo(Rung.WEAK);
+    }
+
+    @Test
+    @DisplayName("weak_fp respects the proximity boundary exactly: one line beyond it never matches")
+    void weakFingerprintRespectsTheProximityBoundary() {
+        Fingerprints beforeFp = fp("java:S3649", "PaymentService.java", null, null);
+        Fingerprints afterFp = fp("java:S3649", "PaymentService.java", null, null);
+
+        PreviousIssueCandidate p = previous(1, 42, beforeFp);
+        IncomingFinding tooFar = current(0, 42 + WEAK_PROXIMITY + 1, afterFp);
+
+        MatchResult result = matcher.match(List.of(p), List.of(tooFar));
 
         assertThat(result.matches()).isEmpty();
-        assertThat(result.newFindings()).extracting(CandidateFinding::id).containsExactly("f1");
-        assertThat(result.disappearedIssues()).isEmpty();
+        assertThat(result.newIssues()).containsExactly(tooFar);
+        assertThat(result.noLongerPresent()).containsExactly(p);
     }
 
-    @Nested
-    @DisplayName("pass 1 - exact fingerprint")
-    class ExactFingerprint {
+    @Test
+    @DisplayName("§3.1's own worked example: a renamed method AND a renamed parameter defeats rungs 1 and 2, "
+            + "leaving rung 3 as the one that actually resolves it")
+    void resolvesTheArchitectureDocsWorkedExampleViaWeakRungOnly() {
+        // Run 1, commit a1b2c3, PaymentService.java line 42:
+        //   public void refund(Order o) {
+        //       String sql = "SELECT * FROM refunds WHERE id = " + o.getId();
+        Fingerprints run1 = fp(
+                "java:S3649",
+                "PaymentService.java",
+                "com.acme.PaymentService#refund",
+                "String sql = \"SELECT * FROM refunds WHERE id = \" + o.getId();");
 
-        @Test
-        @DisplayName("matches on the analyser's fingerprint even when path and line both changed")
-        void winsOverEverything() {
-            SourceSnapshot before = snapshot(PATH, file());
-            CandidateFinding original = finding("f0", RULE, PATH, 7, before, "abc123");
-            TrackedIssue issue = trackedFrom("i1", original);
+        // Run 2, commit d4e5f6, line 58 (12 lines of added imports shifted it, well within the
+        // +-25 window): the method AND its parameter were renamed.
+        //   public void issueRefund(Order order) {
+        //       String sql = "SELECT * FROM refunds WHERE id = " + order.getId();
+        Fingerprints run2 = fp(
+                "java:S3649",
+                "PaymentService.java",
+                "com.acme.PaymentService#issueRefund",
+                "String sql = \"SELECT * FROM refunds WHERE id = \" + order.getId();");
 
-            SourceSnapshot after = snapshot("src/main/java/Renamed.java", fileWithHeader(40));
-            CandidateFinding moved =
-                    finding("f1", RULE, "src/main/java/Renamed.java", 47, after, "abc123");
+        // Both rungs that could theoretically survive a lesser edit are defeated by this one:
+        assertThat(run1.identityFp())
+                .as("the enclosing method's own name changed, so identity_fp cannot survive this edit")
+                .isNotEqualTo(run2.identityFp());
+        assertThat(run1.contextFp())
+                .as("the flagged line's own text changed (o -> order), which is exactly what context_fp "
+                        + "does not tolerate (§3.2's own \"breaks on\" column)")
+                .isNotEqualTo(run2.contextFp());
+        assertThat(run1.weakFp())
+                .as("rule id and file path are untouched, so weak_fp is unaffected by either rename")
+                .isEqualTo(run2.weakFp());
 
-            MatchResult result =
-                    matcher.match(new MatchRequest(List.of(issue), List.of(moved), DiffModel.empty()));
+        PreviousIssueCandidate p = previous(1, 42, run1);
+        IncomingFinding c = current(0, 58, run2);
 
-            assertThat(result.matches()).hasSize(1);
-            assertThat(result.matches().get(0)).satisfies(match -> {
-                assertThat(match.issue().id()).isEqualTo("i1");
-                assertThat(match.finding().id()).isEqualTo("f1");
-                assertThat(match.strategy()).isEqualTo(MatchStrategy.EXACT_FINGERPRINT);
-                assertThat(match.confidence()).isEqualTo(1.0);
-            });
-        }
+        MatchResult result = matcher.match(List.of(p), List.of(c));
 
-        @Test
-        @DisplayName("does not match two different rules that share a fingerprint value")
-        void keepsRulesApart() {
-            SourceSnapshot snapshot = snapshot(PATH, file());
-            TrackedIssue issue = trackedFrom("i1", finding("f0", RULE, PATH, 7, snapshot, "shared"));
-            CandidateFinding other = finding("f1", "java:S1481", PATH, 7, snapshot, "shared");
-
-            MatchResult result =
-                    matcher.match(new MatchRequest(List.of(issue), List.of(other), DiffModel.empty()));
-
-            assertThat(result.matches()).isEmpty();
-            assertThat(result.disappearedIssues()).extracting(TrackedIssue::id).containsExactly("i1");
-            assertThat(result.newFindings()).extracting(CandidateFinding::id).containsExactly("f1");
-        }
+        assertThat(result.matches()).hasSize(1);
+        assertThat(result.matches().get(0).rung())
+                .as("this is exactly why the ladder has three rungs and not one")
+                .isEqualTo(Rung.WEAK);
+        assertThat(result.newIssues()).isEmpty();
+        assertThat(result.noLongerPresent()).isEmpty();
     }
 
-    @Nested
-    @DisplayName("pass 2 - diff-aware line remapping")
-    class DiffRemapping {
+    // ---------------------------------------------------------------------------------------
+    // Determinism and tie-breaking
+    // ---------------------------------------------------------------------------------------
 
-        @Test
-        @DisplayName("follows a finding that the diff pushed down the file")
-        void followsInsertedLines() {
-            SourceSnapshot before = snapshot(PATH, file());
-            TrackedIssue issue = trackedFrom("i1", finding("f0", RULE, PATH, 7, before));
+    @Test
+    @DisplayName("ties within a bucket resolve by line proximity, then by lowest finding id")
+    void tieBreaksByProximityThenLowestId() {
+        Fingerprints sharedFp = fp("java:S3649", "File.java", null, null);
 
-            List<String> afterLines = fileWithHeader(5);
-            SourceSnapshot after = snapshot(PATH, afterLines);
-            CandidateFinding moved = finding("f1", RULE, PATH, 12, after);
-            DiffModel diff = UnifiedDiffParser.parse(
-                    TestUnifiedDiff.between(PATH, file(), PATH, afterLines));
+        PreviousIssueCandidate near = previous(5, 100, sharedFp);
+        PreviousIssueCandidate exact = previous(2, 103, sharedFp);
+        PreviousIssueCandidate alsoExact = previous(1, 103, sharedFp); // ties `exact` on distance
 
-            MatchResult result = matcher.match(new MatchRequest(List.of(issue), List.of(moved), diff));
+        IncomingFinding c = current(0, 103, sharedFp);
 
-            assertThat(result.matches()).hasSize(1);
-            assertThat(result.matches().get(0)).satisfies(match -> {
-                assertThat(match.issue().id()).isEqualTo("i1");
-                assertThat(match.strategy()).isEqualTo(MatchStrategy.DIFF_REMAPPED_LINE);
-                assertThat(match.confidence()).isEqualTo(0.9);
-            });
-        }
+        MatchResult result = matcher.match(List.of(near, exact, alsoExact), List.of(c));
 
-        @Test
-        @DisplayName("follows a renamed file through the diff's rename header")
-        void followsRenames() {
-            String renamed = "src/main/java/Renamed.java";
-            SourceSnapshot before = snapshot(PATH, file());
-            TrackedIssue issue = trackedFrom("i1", finding("f0", RULE, PATH, 7, before));
-
-            SourceSnapshot after = snapshot(renamed, file());
-            CandidateFinding sameLine = finding("f1", RULE, renamed, 7, after);
-            DiffModel diff =
-                    UnifiedDiffParser.parse(TestUnifiedDiff.between(PATH, file(), renamed, file()));
-
-            MatchResult result =
-                    matcher.match(new MatchRequest(List.of(issue), List.of(sameLine), diff));
-
-            assertThat(result.matches()).hasSize(1);
-            assertThat(result.matches().get(0)).satisfies(match ->
-                    assertThat(match.strategy()).isEqualTo(MatchStrategy.DIFF_REMAPPED_LINE));
-        }
-
-        @Test
-        @DisplayName("without a diff it still matches an untouched file at the same line")
-        void degradesToIdentityWithoutDiff() {
-            SourceSnapshot snapshot = snapshot(PATH, file());
-            TrackedIssue issue = trackedFrom("i1", finding("f0", RULE, PATH, 7, snapshot));
-            CandidateFinding same = finding("f1", RULE, PATH, 7, snapshot);
-
-            MatchResult result =
-                    matcher.match(new MatchRequest(List.of(issue), List.of(same), DiffModel.empty()));
-
-            assertThat(result.matches()).hasSize(1);
-            assertThat(result.matches().get(0)).satisfies(match ->
-                    assertThat(match.strategy()).isEqualTo(MatchStrategy.DIFF_REMAPPED_LINE));
-        }
-
-        @Test
-        @DisplayName("refuses a positional coincidence that the file contents contradict")
-        void refusesContradictedPosition() {
-            List<String> beforeLines = List.of(
-                    "class A {",
-                    "    void alpha() {",
-                    "        String a = null;",
-                    "        System.out.println(a.length());",
-                    "    }",
-                    "    void beta() {",
-                    "        String b = null;",
-                    "        System.out.println(b.length());",
-                    "    }",
-                    "}");
-            // The two methods swap places: line 4 now holds a completely different violation.
-            List<String> afterLines = List.of(
-                    "class A {",
-                    "    void beta() {",
-                    "        String b = null;",
-                    "        System.out.println(b.length());",
-                    "    }",
-                    "    void alpha() {",
-                    "        String a = null;",
-                    "        System.out.println(a.length());",
-                    "    }",
-                    "}");
-
-            SourceSnapshot before = snapshot(PATH, beforeLines);
-            SourceSnapshot after = snapshot(PATH, afterLines);
-            TrackedIssue alpha = trackedFrom("i-alpha", finding("f0", RULE, PATH, 4, before));
-            TrackedIssue beta = trackedFrom("i-beta", finding("f1", RULE, PATH, 8, before));
-            CandidateFinding betaNow = finding("g0", RULE, PATH, 4, after);
-            CandidateFinding alphaNow = finding("g1", RULE, PATH, 8, after);
-
-            MatchResult result = matcher.match(
-                    new MatchRequest(List.of(alpha, beta), List.of(betaNow, alphaNow), DiffModel.empty()));
-
-            assertThat(result.matches())
-                    .extracting(m -> m.issue().id() + "->" + m.finding().id())
-                    .containsExactlyInAnyOrder("i-alpha->g1", "i-beta->g0");
-            assertThat(result.matches()).allSatisfy(match ->
-                    assertThat(match.strategy()).isEqualTo(MatchStrategy.STRUCTURAL_HASH));
-        }
+        assertThat(result.matches()).hasSize(1);
+        assertThat(result.matches().get(0).previous())
+                .as("distance 0 beats distance 3, and between the two distance-0 candidates the lowest "
+                        + "finding id (seq=1) wins")
+                .isEqualTo(alsoExact);
     }
 
-    @Nested
-    @DisplayName("pass 3 - structural hash")
-    class StructuralHash {
+    @Test
+    @DisplayName("two current findings competing for the same bucket each get the closest available candidate")
+    void twoCurrentFindingsSplitACommonBucket() {
+        Fingerprints sharedFp = fp("java:S3649", "File.java", null, null);
 
-        @Test
-        @DisplayName("survives a line shift that no diff described")
-        void survivesUndescribedShift() {
-            SourceSnapshot before = snapshot(PATH, file());
-            TrackedIssue issue = trackedFrom("i1", finding("f0", RULE, PATH, 7, before));
+        PreviousIssueCandidate atTen = previous(1, 10, sharedFp);
+        PreviousIssueCandidate atTwenty = previous(2, 20, sharedFp);
 
-            SourceSnapshot after = snapshot(PATH, fileWithHeader(20));
-            CandidateFinding moved = finding("f1", RULE, PATH, 27, after);
+        IncomingFinding closeToTen = current(0, 11, sharedFp);
+        IncomingFinding closeToTwenty = current(1, 21, sharedFp);
 
-            MatchResult result =
-                    matcher.match(new MatchRequest(List.of(issue), List.of(moved), DiffModel.empty()));
+        MatchResult result = matcher.match(List.of(atTen, atTwenty), List.of(closeToTen, closeToTwenty));
 
-            assertThat(result.matches()).hasSize(1);
-            assertThat(result.matches().get(0)).satisfies(match -> {
-                assertThat(match.strategy()).isEqualTo(MatchStrategy.STRUCTURAL_HASH);
-                assertThat(match.confidence()).isEqualTo(0.8);
-            });
-        }
-
-        @Test
-        @DisplayName("survives the whole file being reindented")
-        void survivesReindent() {
-            List<String> reindented = file().stream().map(line -> line.replace("    ", "\t")).toList();
-            SourceSnapshot before = snapshot(PATH, file());
-            SourceSnapshot after = snapshot(PATH, reindented);
-
-            TrackedIssue issue = trackedFrom("i1", finding("f0", RULE, PATH, 7, before));
-            CandidateFinding sameLine = finding("f1", RULE, PATH, 7, after);
-
-            MatchResult result =
-                    matcher.match(new MatchRequest(List.of(issue), List.of(sameLine), DiffModel.empty()));
-
-            assertThat(result.matches()).hasSize(1);
-            assertThat(result.matches().get(0)).satisfies(match ->
-                    assertThat(match.strategy()).isIn(
-                            MatchStrategy.DIFF_REMAPPED_LINE, MatchStrategy.STRUCTURAL_HASH));
-        }
+        assertThat(result.matches()).hasSize(2);
+        assertThat(result.matches())
+                .anySatisfy(m -> {
+                    assertThat(m.previous()).isEqualTo(atTen);
+                    assertThat(m.current()).isEqualTo(closeToTen);
+                })
+                .anySatisfy(m -> {
+                    assertThat(m.previous()).isEqualTo(atTwenty);
+                    assertThat(m.current()).isEqualTo(closeToTwenty);
+                });
     }
 
-    @Nested
-    @DisplayName("pass 4 - line content hash")
-    class LineContentHash {
+    @Test
+    @DisplayName("running the same inputs twice produces an identical matching - required for replay (§4.2)")
+    void isDeterministicAcrossRepeatedRuns() {
+        Fingerprints fpA = fp("java:S3649", "A.java", "A#m", "line a");
+        Fingerprints fpB = fp("java:S2259", "B.java", null, "line b");
+        Fingerprints fpC = fp("java:S1181", "C.java", null, null);
 
-        @Test
-        @DisplayName("survives a rename that no diff described, because the path is not hashed")
-        void survivesUndescribedRename() {
-            String renamed = "src/main/java/Renamed.java";
-            SourceSnapshot before = snapshot(PATH, file());
-            TrackedIssue issue = trackedFrom("i1", finding("f0", RULE, PATH, 7, before));
+        List<PreviousIssueCandidate> previous =
+                List.of(previous(1, 10, fpA), previous(2, 20, fpB), previous(3, 30, fpC));
+        List<IncomingFinding> current =
+                List.of(current(0, 11, fpA), current(1, 21, fpB), current(2, 31, fpC));
 
-            SourceSnapshot after = snapshot(renamed, fileWithHeader(3));
-            CandidateFinding moved = finding("f1", RULE, renamed, 10, after);
+        MatchResult first = matcher.match(previous, current);
+        MatchResult second = matcher.match(previous, current);
 
-            MatchResult result =
-                    matcher.match(new MatchRequest(List.of(issue), List.of(moved), DiffModel.empty()));
-
-            assertThat(result.matches()).hasSize(1);
-            assertThat(result.matches().get(0)).satisfies(match -> {
-                assertThat(match.strategy()).isEqualTo(MatchStrategy.LINE_CONTENT_HASH);
-                assertThat(match.confidence()).isEqualTo(0.6);
-            });
-        }
+        assertThat(first).isEqualTo(second);
     }
 
-    @Nested
-    @DisplayName("pass 5 - positional fallback")
-    class PositionalFallback {
+    // ---------------------------------------------------------------------------------------
+    // New issues, auto-resolution, and edge cases
+    // ---------------------------------------------------------------------------------------
 
-        @Test
-        @DisplayName("matches a small drift when no content and no diff are available")
-        void matchesWithinWindow() {
-            TrackedIssue issue = trackedFrom("i1", finding("f0", RULE, PATH, 40, SourceSnapshot.empty()));
-            CandidateFinding drifted = finding("f1", RULE, PATH, 44, SourceSnapshot.empty());
+    @Test
+    @DisplayName("a finding matching no rung opens a new issue")
+    void unmatchedCurrentFindingOpensANewIssue() {
+        MatchResult result = matcher.match(List.of(), List.of(current(0, 1, fp("r", "f", null, null))));
 
-            MatchResult result =
-                    matcher.match(new MatchRequest(List.of(issue), List.of(drifted), DiffModel.empty()));
-
-            assertThat(result.matches()).hasSize(1);
-            assertThat(result.matches().get(0)).satisfies(match -> {
-                assertThat(match.strategy()).isEqualTo(MatchStrategy.POSITIONAL_FALLBACK);
-                assertThat(match.confidence()).isEqualTo(0.3);
-            });
-        }
-
-        @Test
-        @DisplayName("refuses a drift larger than the window")
-        void refusesBeyondWindow() {
-            TrackedIssue issue = trackedFrom("i1", finding("f0", RULE, PATH, 40, SourceSnapshot.empty()));
-            CandidateFinding drifted = finding("f1", RULE, PATH, 60, SourceSnapshot.empty());
-
-            MatchResult result =
-                    matcher.match(new MatchRequest(List.of(issue), List.of(drifted), DiffModel.empty()));
-
-            assertThat(result.matches()).isEmpty();
-            assertThat(result.disappearedIssues()).extracting(TrackedIssue::id).containsExactly("i1");
-            assertThat(result.newFindings()).extracting(CandidateFinding::id).containsExactly("f1");
-        }
-
-        @Test
-        @DisplayName("claims the nearest candidate first when several are in range")
-        void prefersNearest() {
-            TrackedIssue issue = trackedFrom("i1", finding("f0", RULE, PATH, 40, SourceSnapshot.empty()));
-            CandidateFinding far = finding("f-far", RULE, PATH, 47, SourceSnapshot.empty());
-            CandidateFinding near = finding("f-near", RULE, PATH, 42, SourceSnapshot.empty());
-
-            MatchResult result =
-                    matcher.match(new MatchRequest(List.of(issue), List.of(far, near), DiffModel.empty()));
-
-            assertThat(result.matches()).hasSize(1);
-            assertThat(result.matches().get(0)).satisfies(match ->
-                    assertThat(match.finding().id()).isEqualTo("f-near"));
-            assertThat(result.newFindings()).extracting(CandidateFinding::id).containsExactly("f-far");
-        }
-
-        @Test
-        @DisplayName("can be switched off with a zero drift window")
-        void honoursConfiguredWindow() {
-            IssueMatcher strict = new IssueMatcher(new MatchingOptions(0));
-            TrackedIssue issue = trackedFrom("i1", finding("f0", RULE, PATH, 40, SourceSnapshot.empty()));
-            CandidateFinding drifted = finding("f1", RULE, PATH, 41, SourceSnapshot.empty());
-
-            MatchResult result =
-                    strict.match(new MatchRequest(List.of(issue), List.of(drifted), DiffModel.empty()));
-
-            assertThat(result.matches()).isEmpty();
-        }
+        assertThat(result.newIssues()).hasSize(1);
+        assertThat(result.matches()).isEmpty();
     }
 
-    @Nested
-    @DisplayName("pipeline behaviour")
-    class Pipeline {
+    @Test
+    @DisplayName("a previous issue matching no current finding is reported as no-longer-present")
+    void unmatchedPreviousIssueIsAutoResolved() {
+        PreviousIssueCandidate p = previous(1, 1, fp("r", "f", null, null));
 
-        @Test
-        @DisplayName("a claimed issue is invisible to later passes")
-        void laterPassesSeeOnlyWhatIsLeft() {
-            SourceSnapshot snapshot = snapshot(PATH, file());
-            CandidateFinding original = finding("f0", RULE, PATH, 7, snapshot, "fp-1");
-            TrackedIssue tracked = trackedFrom("i1", original);
-            TrackedIssue decoy = new TrackedIssue(
-                    "i2",
-                    RULE,
-                    tracked.severity(),
-                    IssueStatus.OPEN,
-                    SourceLocation.ofLine(PATH, 7),
-                    tracked.fingerprints());
+        MatchResult result = matcher.match(List.of(p), List.of());
 
-            CandidateFinding incoming = finding("f1", RULE, PATH, 7, snapshot, "fp-1");
-
-            MatchResult result = matcher.match(
-                    new MatchRequest(List.of(tracked, decoy), List.of(incoming), DiffModel.empty()));
-
-            assertThat(result.matches()).hasSize(1);
-            assertThat(result.matches().get(0)).satisfies(match -> {
-                assertThat(match.issue().id()).isEqualTo("i1");
-                assertThat(match.strategy()).isEqualTo(MatchStrategy.EXACT_FINGERPRINT);
-            });
-            assertThat(result.disappearedIssues()).extracting(TrackedIssue::id).containsExactly("i2");
-        }
-
-        @Test
-        @DisplayName("pairs as many of an ambiguous bucket as it can and leaves the surplus new")
-        void handlesAmbiguityDeterministically() {
-            SourceSnapshot snapshot = snapshot(PATH, file());
-            CandidateFinding template = finding("f0", RULE, PATH, 7, snapshot);
-            TrackedIssue first = trackedFrom("i1", template);
-            TrackedIssue second = trackedFrom("i2", template);
-
-            List<CandidateFinding> incoming = List.of(
-                    finding("g1", RULE, PATH, 7, snapshot),
-                    finding("g2", RULE, PATH, 7, snapshot),
-                    finding("g3", RULE, PATH, 7, snapshot));
-
-            MatchResult result =
-                    matcher.match(new MatchRequest(List.of(first, second), incoming, DiffModel.empty()));
-
-            assertThat(result.matches()).hasSize(2);
-            assertThat(result.newFindings()).hasSize(1);
-            assertThat(result.matches())
-                    .extracting(m -> m.issue().id() + "->" + m.finding().id())
-                    .containsExactly("i1->g1", "i2->g2");
-        }
-
-        @Test
-        @DisplayName("produces the same result whatever order the inputs arrive in")
-        void isOrderIndependent() {
-            SourceSnapshot before = snapshot(PATH, file());
-            SourceSnapshot after = snapshot(PATH, fileWithHeader(4));
-
-            List<TrackedIssue> issues = new ArrayList<>(List.of(
-                    trackedFrom("i1", finding("f0", RULE, PATH, 7, before)),
-                    trackedFrom("i2", finding("f1", "java:S1481", PATH, 6, before)),
-                    trackedFrom("i3", finding("f2", RULE, "other/File.java", 3, SourceSnapshot.empty()))));
-            List<CandidateFinding> findings = new ArrayList<>(List.of(
-                    finding("g1", RULE, PATH, 11, after),
-                    finding("g2", "java:S1481", PATH, 10, after),
-                    finding("g3", "java:S106", PATH, 11, after)));
-
-            List<String> reference = fingerprintOf(matcher.match(
-                    new MatchRequest(issues, findings, DiffModel.empty())));
-
-            Random random = new Random(99);
-            for (int i = 0; i < 25; i++) {
-                Collections.shuffle(issues, random);
-                Collections.shuffle(findings, random);
-                assertThat(fingerprintOf(matcher.match(
-                                new MatchRequest(issues, findings, DiffModel.empty()))))
-                        .isEqualTo(reference);
-            }
-        }
-
-        @Test
-        @DisplayName("counts how many matches each strategy produced")
-        void reportsStrategyHistogram() {
-            SourceSnapshot before = snapshot(PATH, file());
-            SourceSnapshot after = snapshot(PATH, fileWithHeader(15));
-
-            List<TrackedIssue> issues = List.of(
-                    trackedFrom("i1", finding("f0", RULE, PATH, 7, before, "fp")),
-                    trackedFrom("i2", finding("f1", "java:S1481", PATH, 6, before)));
-            List<CandidateFinding> findings = List.of(
-                    finding("g1", RULE, PATH, 22, after, "fp"),
-                    finding("g2", "java:S1481", PATH, 21, after));
-
-            MatchResult result =
-                    matcher.match(new MatchRequest(issues, findings, DiffModel.empty()));
-
-            assertThat(result.strategyHistogram())
-                    .containsEntry(MatchStrategy.EXACT_FINGERPRINT, 1L)
-                    .containsEntry(MatchStrategy.STRUCTURAL_HASH, 1L);
-            assertThat(result.byIssueId()).containsOnlyKeys("i1", "i2");
-        }
-
-        @Test
-        @DisplayName("rejects duplicate identifiers rather than silently mismatching")
-        void rejectsDuplicateIds() {
-            SourceSnapshot snapshot = snapshot(PATH, file());
-            CandidateFinding one = finding("dup", RULE, PATH, 7, snapshot);
-            CandidateFinding two = finding("dup", RULE, PATH, 6, snapshot);
-
-            assertThatThrownBy(() -> new MatchRequest(List.of(), List.of(one, two), DiffModel.empty()))
-                    .isInstanceOf(IllegalArgumentException.class)
-                    .hasMessageContaining("Duplicate id");
-        }
+        assertThat(result.noLongerPresent()).containsExactly(p);
+        assertThat(result.matches()).isEmpty();
     }
 
-    private static List<String> fingerprintOf(MatchResult result) {
-        List<String> lines = new ArrayList<>();
-        result.matches().stream()
-                .map(m -> "M " + m.issue().id() + " " + m.finding().id() + " " + m.strategy())
-                .sorted()
-                .forEach(lines::add);
-        result.newFindings().stream().map(f -> "N " + f.id()).sorted().forEach(lines::add);
-        result.disappearedIssues().stream().map(i -> "R " + i.id()).sorted().forEach(lines::add);
-        return lines;
+    @Test
+    @DisplayName("an empty run against an empty baseline matches nothing and opens nothing")
+    void handlesEmptyInputs() {
+        MatchResult result = matcher.match(List.of(), List.of());
+
+        assertThat(result.matches()).isEmpty();
+        assertThat(result.newIssues()).isEmpty();
+        assertThat(result.noLongerPresent()).isEmpty();
+    }
+
+    @Test
+    @DisplayName("rejects two previous candidates for the same issue id, which would make removal ambiguous")
+    void rejectsDuplicateIssueIds() {
+        UUID issueId = UUID.randomUUID();
+        Fingerprints fingerprints = fp("r", "f", null, null);
+        PreviousIssueCandidate first = new PreviousIssueCandidate(issueId, 1, 1, fingerprints);
+        PreviousIssueCandidate duplicate = new PreviousIssueCandidate(issueId, 2, 2, fingerprints);
+
+        assertThatThrownBy(() -> matcher.match(List.of(first, duplicate), List.of()))
+                .isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
+    @DisplayName("rejects a negative line-proximity window at construction")
+    void rejectsANegativeProximityWindow() {
+        assertThatThrownBy(() -> new IssueMatcher(-1)).isInstanceOf(IllegalArgumentException.class);
     }
 }

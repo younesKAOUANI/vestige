@@ -1,0 +1,32 @@
+{
+  "id": "02-extract-method-no-symbol-path",
+  "description": "Same extraction as case 1, but the analyser does not supply logicalLocations at all (a real constraint for some SARIF producers, \u00a73.2) - identity_fp is unavailable on both sides, so this exercises the fallback to context_fp directly.",
+  "refactorShape": "extract-method",
+  "renames": {},
+  "before": [
+    {
+      "id": "b1",
+      "ruleId": "java:S3649",
+      "filePath": "src/main/java/com/acme/PaymentService.java",
+      "symbolPath": null,
+      "line": 6,
+      "snippet": "        String sql = \"SELECT * FROM refunds WHERE id = \" + order.getId();"
+    }
+  ],
+  "after": [
+    {
+      "id": "a1",
+      "ruleId": "java:S3649",
+      "filePath": "src/main/java/com/acme/PaymentService.java",
+      "symbolPath": null,
+      "line": 11,
+      "snippet": "        String sql = \"SELECT * FROM refunds WHERE id = \" + order.getId();"
+    }
+  ],
+  "expectedMatches": [
+    {
+      "before": "b1",
+      "after": "a1"
+    }
+  ]
+}

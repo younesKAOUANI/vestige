@@ -1,0 +1,52 @@
+{
+  "id": "25-weak-fp-tie-break-trap",
+  "description": "Two previous issues of the same rule in the same file, sixty-odd lines apart - far enough that their +-25-line proximity windows (\u00a73.2) cannot overlap - and a single field added at the top of the class shifts both current findings down by exactly one line. No symbol path or snippet on either side, so this is decided purely by weak_fp plus line proximity: each current finding is unambiguously closer to its own true origin than to the other, and it must not swap the pairing.",
+  "refactorShape": "other",
+  "renames": {},
+  "before": [
+    {
+      "id": "b1",
+      "ruleId": "java:S1135",
+      "filePath": "src/main/java/com/acme/BigFile.java",
+      "symbolPath": null,
+      "line": 5,
+      "snippet": null
+    },
+    {
+      "id": "b2",
+      "ruleId": "java:S1135",
+      "filePath": "src/main/java/com/acme/BigFile.java",
+      "symbolPath": null,
+      "line": 70,
+      "snippet": null
+    }
+  ],
+  "after": [
+    {
+      "id": "a1",
+      "ruleId": "java:S1135",
+      "filePath": "src/main/java/com/acme/BigFile.java",
+      "symbolPath": null,
+      "line": 7,
+      "snippet": null
+    },
+    {
+      "id": "a2",
+      "ruleId": "java:S1135",
+      "filePath": "src/main/java/com/acme/BigFile.java",
+      "symbolPath": null,
+      "line": 72,
+      "snippet": null
+    }
+  ],
+  "expectedMatches": [
+    {
+      "before": "b1",
+      "after": "a1"
+    },
+    {
+      "before": "b2",
+      "after": "a2"
+    }
+  ]
+}

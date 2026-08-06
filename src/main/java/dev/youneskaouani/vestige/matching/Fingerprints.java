@@ -1,28 +1,16 @@
 package dev.youneskaouani.vestige.matching;
 
 /**
- * The three content-derived identities of a finding, one per fingerprint-based pass.
- *
- * <p>Any of them may be {@code null}: an analyser that does not emit {@code partialFingerprints}
- * leaves {@link #exact()} empty, and a report without embedded file contents leaves
- * {@link #structural()} and {@link #lineContent()} empty. A null fingerprint means "this pass has
- * nothing to say", never "matches anything".
+ * The three fingerprints §3.2 computes for a finding. Any of {@code identityFp}/{@code contextFp}
+ * may be {@code null} when the finding does not carry the input that rung needs (no symbol path,
+ * no line snippet); {@code weakFp} is always present, since it needs only the rule id and the file
+ * path, both of which are mandatory on any usable finding.
  */
-public record Fingerprints(String exact, String structural, String lineContent) {
-
-    private static final Fingerprints NONE = new Fingerprints(null, null, null);
+public record Fingerprints(String identityFp, String contextFp, String weakFp) {
 
     public Fingerprints {
-        exact = blankToNull(exact);
-        structural = blankToNull(structural);
-        lineContent = blankToNull(lineContent);
-    }
-
-    public static Fingerprints none() {
-        return NONE;
-    }
-
-    private static String blankToNull(String value) {
-        return (value == null || value.isBlank()) ? null : value;
+        if (weakFp == null || weakFp.isBlank()) {
+            throw new IllegalArgumentException("weakFp is mandatory: rule id and file path are always available");
+        }
     }
 }

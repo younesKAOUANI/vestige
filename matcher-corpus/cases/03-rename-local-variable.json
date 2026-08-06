@@ -1,0 +1,32 @@
+{
+  "id": "03-rename-local-variable",
+  "description": "A local variable is renamed; the line that uses it changes, but the enclosing method does not, so identity_fp (rung 1) survives a change that defeats context_fp (rung 2). This is the table's own claim in \u00a73.2 - identity_fp 'survives renamed locals'.",
+  "refactorShape": "rename-symbol",
+  "renames": {},
+  "before": [
+    {
+      "id": "b1",
+      "ruleId": "java:S3649",
+      "filePath": "src/main/java/com/acme/PaymentService.java",
+      "symbolPath": "com.acme.PaymentService#issueRefund",
+      "line": 5,
+      "snippet": "        String sql = \"SELECT * FROM refunds WHERE id = \" + o.getId();"
+    }
+  ],
+  "after": [
+    {
+      "id": "a1",
+      "ruleId": "java:S3649",
+      "filePath": "src/main/java/com/acme/PaymentService.java",
+      "symbolPath": "com.acme.PaymentService#issueRefund",
+      "line": 5,
+      "snippet": "        String sql = \"SELECT * FROM refunds WHERE id = \" + order.getId();"
+    }
+  ],
+  "expectedMatches": [
+    {
+      "before": "b1",
+      "after": "a1"
+    }
+  ]
+}

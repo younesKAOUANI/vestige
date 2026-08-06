@@ -1,0 +1,27 @@
+{
+  "id": "28-large-in-file-jump-exceeds-proximity",
+  "description": "A block is cut and pasted from the top of a large file to the bottom, 38 lines away, for a rule whose analyser reports neither a symbol path nor a line snippet (identity_fp and context_fp are therefore both unavailable - not merely defeated - so only weak_fp is ever in play; this is not a file rename either, so the SCM rename map does not apply). Rung 3's proximity window (25 lines, \u00a73.2) is a deliberate, documented boundary: beyond it, Vestige reports the move as fixed-and-new rather than guessing. Getting this wrong in the other direction - matching arbitrarily distant lines - is exactly how weak_fp would stop being trustworthy. (Contrast case 12, the same boundary well inside the window.)",
+  "refactorShape": "other",
+  "renames": {},
+  "before": [
+    {
+      "id": "b1",
+      "ruleId": "java:S1181",
+      "filePath": "src/main/java/com/acme/BigFile.java",
+      "symbolPath": null,
+      "line": 5,
+      "snippet": null
+    }
+  ],
+  "after": [
+    {
+      "id": "a1",
+      "ruleId": "java:S1181",
+      "filePath": "src/main/java/com/acme/BigFile.java",
+      "symbolPath": null,
+      "line": 43,
+      "snippet": null
+    }
+  ],
+  "expectedMatches": []
+}

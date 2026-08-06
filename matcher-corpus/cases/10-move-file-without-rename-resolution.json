@@ -1,0 +1,27 @@
+{
+  "id": "10-move-file-without-rename-resolution",
+  "description": "A documented limitation, not a bug: the file moved, but the SCM rename map could not be resolved for this run (the compare API was unreachable, or the run has no base commit to diff against - GitHubScmRenameResolver degrades to an empty map rather than failing the run). With no renamed path to match against, the old issue is auto-resolved as fixed and the finding at the new path opens as a new issue. This is the expected, graceful degradation \u00a73.2 describes, and matcher-corpus is where that trade-off is pinned down rather than left as an assumption.",
+  "refactorShape": "move-file",
+  "renames": {},
+  "before": [
+    {
+      "id": "b1",
+      "ruleId": "java:S3649",
+      "filePath": "src/main/java/com/acme/legacy/PaymentService.java",
+      "symbolPath": null,
+      "line": 4,
+      "snippet": "        String sql = \"SELECT * FROM refunds WHERE id = \" + order.getId();"
+    }
+  ],
+  "after": [
+    {
+      "id": "a1",
+      "ruleId": "java:S3649",
+      "filePath": "src/main/java/com/acme/billing/PaymentService.java",
+      "symbolPath": null,
+      "line": 4,
+      "snippet": "        String sql = \"SELECT * FROM refunds WHERE id = \" + order.getId();"
+    }
+  ],
+  "expectedMatches": []
+}

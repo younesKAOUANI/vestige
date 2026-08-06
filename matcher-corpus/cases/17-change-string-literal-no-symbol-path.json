@@ -1,0 +1,32 @@
+{
+  "id": "17-change-string-literal-no-symbol-path",
+  "description": "ARCHITECTURE.md \u00a73.2's own example, end to end: a string and a numeric literal both change on the flagged line. No symbol path, so this is squarely a context_fp case.",
+  "refactorShape": "change-literal",
+  "renames": {},
+  "before": [
+    {
+      "id": "b1",
+      "ruleId": "java:S2184",
+      "filePath": "src/main/java/com/acme/Pricing.java",
+      "symbolPath": null,
+      "line": 5,
+      "snippet": "        double x = base(\"abc\") + 1;"
+    }
+  ],
+  "after": [
+    {
+      "id": "a1",
+      "ruleId": "java:S2184",
+      "filePath": "src/main/java/com/acme/Pricing.java",
+      "symbolPath": null,
+      "line": 5,
+      "snippet": "        double x = base(\"def\") + 2;"
+    }
+  ],
+  "expectedMatches": [
+    {
+      "before": "b1",
+      "after": "a1"
+    }
+  ]
+}

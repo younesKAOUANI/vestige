@@ -1,0 +1,32 @@
+{
+  "id": "24-reformat-whole-file-line-shift",
+  "description": "A formatter adds blank lines and braces-on-own-line spacing throughout the file, shifting the flagged line by several positions with the enclosing method preserved.",
+  "refactorShape": "reformat",
+  "renames": {},
+  "before": [
+    {
+      "id": "b1",
+      "ruleId": "java:S3649",
+      "filePath": "src/main/java/com/acme/PaymentService.java",
+      "symbolPath": "com.acme.PaymentService#refund",
+      "line": 4,
+      "snippet": "        String sql = \"SELECT * FROM refunds WHERE id = \" + order.getId();"
+    }
+  ],
+  "after": [
+    {
+      "id": "a1",
+      "ruleId": "java:S3649",
+      "filePath": "src/main/java/com/acme/PaymentService.java",
+      "symbolPath": "com.acme.PaymentService#refund",
+      "line": 8,
+      "snippet": "        String sql = \"SELECT * FROM refunds WHERE id = \" + order.getId();"
+    }
+  ],
+  "expectedMatches": [
+    {
+      "before": "b1",
+      "after": "a1"
+    }
+  ]
+}

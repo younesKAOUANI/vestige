@@ -1,0 +1,32 @@
+{
+  "id": "19-minimal-analyser-weak-fp-only",
+  "description": "A minimal analyser output: no logicalLocations, no region.snippet.text, just a rule, a file and a line. Only weak_fp is ever computable for either side, so this is the purest test of rung 3 on its own - reusing case 18's unchanged line number, so the match is on rule+file alone with zero line movement to help it.",
+  "refactorShape": "reformat",
+  "renames": {},
+  "before": [
+    {
+      "id": "b1",
+      "ruleId": "java:S1135",
+      "filePath": "src/main/java/com/acme/Pricing.java",
+      "symbolPath": null,
+      "line": 4,
+      "snippet": null
+    }
+  ],
+  "after": [
+    {
+      "id": "a1",
+      "ruleId": "java:S1135",
+      "filePath": "src/main/java/com/acme/Pricing.java",
+      "symbolPath": null,
+      "line": 4,
+      "snippet": null
+    }
+  ],
+  "expectedMatches": [
+    {
+      "before": "b1",
+      "after": "a1"
+    }
+  ]
+}

@@ -1,0 +1,18 @@
+{
+  "id": "20-genuinely-new-issue",
+  "description": "A commit introduces a real defect with no prior counterpart anywhere in the baseline. The most basic new-issue case, and a sanity check that an empty baseline never invents a match out of nothing.",
+  "refactorShape": "other",
+  "renames": {},
+  "before": [],
+  "after": [
+    {
+      "id": "a1",
+      "ruleId": "java:S3518",
+      "filePath": "src/main/java/com/acme/Pricing.java",
+      "symbolPath": "com.acme.Pricing#apply",
+      "line": 5,
+      "snippet": "        double x = order.total() / discountRate;"
+    }
+  ],
+  "expectedMatches": []
+}

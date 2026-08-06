@@ -1,0 +1,34 @@
+{
+  "id": "26-move-file-and-rename-class-combined",
+  "description": "The file moves *and* the class is renamed in the same commit. The rename map fixes the path; identity_fp still breaks on the class rename (consistent with case 4's logic, just at class rather than method granularity), so this resolves through context_fp.",
+  "refactorShape": "move-file",
+  "renames": {
+    "src/main/java/com/acme/legacy/LegacyPaymentService.java": "src/main/java/com/acme/billing/PaymentService.java"
+  },
+  "before": [
+    {
+      "id": "b1",
+      "ruleId": "java:S3649",
+      "filePath": "src/main/java/com/acme/legacy/LegacyPaymentService.java",
+      "symbolPath": "com.acme.legacy.LegacyPaymentService#refund",
+      "line": 5,
+      "snippet": "        String sql = \"SELECT * FROM refunds WHERE id = \" + order.getId();"
+    }
+  ],
+  "after": [
+    {
+      "id": "a1",
+      "ruleId": "java:S3649",
+      "filePath": "src/main/java/com/acme/billing/PaymentService.java",
+      "symbolPath": "com.acme.billing.PaymentService#refund",
+      "line": 5,
+      "snippet": "        String sql = \"SELECT * FROM refunds WHERE id = \" + order.getId();"
+    }
+  ],
+  "expectedMatches": [
+    {
+      "before": "b1",
+      "after": "a1"
+    }
+  ]
+}

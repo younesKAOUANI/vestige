@@ -1,0 +1,32 @@
+{
+  "id": "30-add-throws-clause",
+  "description": "A checked exception is added to a method's throws clause - a real, common refactor that changes the method's signature without changing its name or parameter types. Symbol paths are parameter-type-scoped (\u00a73.2), not full-signature-scoped, so identity_fp is unaffected.",
+  "refactorShape": "rename-symbol",
+  "renames": {},
+  "before": [
+    {
+      "id": "b1",
+      "ruleId": "java:S3649",
+      "filePath": "src/main/java/com/acme/PaymentService.java",
+      "symbolPath": "com.acme.PaymentService#refund(Order)",
+      "line": 5,
+      "snippet": "        String sql = \"SELECT * FROM refunds WHERE id = \" + order.getId();"
+    }
+  ],
+  "after": [
+    {
+      "id": "a1",
+      "ruleId": "java:S3649",
+      "filePath": "src/main/java/com/acme/PaymentService.java",
+      "symbolPath": "com.acme.PaymentService#refund(Order)",
+      "line": 5,
+      "snippet": "        String sql = \"SELECT * FROM refunds WHERE id = \" + order.getId();"
+    }
+  ],
+  "expectedMatches": [
+    {
+      "before": "b1",
+      "after": "a1"
+    }
+  ]
+}
