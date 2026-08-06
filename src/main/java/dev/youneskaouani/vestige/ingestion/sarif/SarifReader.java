@@ -69,6 +69,70 @@ public final class SarifReader {
     }
 
     /**
+     * Reads only as far as the first run's {@code tool.driver} name and version, then stops -
+     * never touching {@code results} or {@code artifacts}, however large they are.
+     *
+     * <p>Exists for one reason: {@code POST /api/v1/runs} needs the analyser name synchronously,
+     * to compute §4.1's idempotency fallback key ({@code sha256(project‖commit‖analyser‖
+     * report_digest)}) and to satisfy {@code analysis_run.analyser_name}'s {@code NOT NULL}
+     * constraint, before the run is even queued - but the full parse (§4.2) deliberately happens
+     * later, on the worker, off the request thread. This method is what lets both of those be true
+     * at once without parsing the report's expensive part twice.
+     *
+     * @throws SarifParseException the bytes are not readable, or the first run does not name a tool
+     */
+    public ToolIdentity peekToolIdentity(byte[] sarif) {
+        if (sarif == null || sarif.length == 0) {
+            throw new SarifParseException("SARIF report is empty");
+        }
+        try (JsonParser parser = objectMapper.getFactory().createParser(sarif)) {
+            if (parser.nextToken() != JsonToken.START_OBJECT) {
+                throw new SarifParseException("SARIF report is not a JSON object");
+            }
+            while (parser.nextToken() == JsonToken.FIELD_NAME) {
+                String field = parser.currentName();
+                parser.nextToken();
+                if ("runs".equals(field)) {
+                    return peekToolFromRuns(parser);
+                }
+                skipValue(parser);
+            }
+            throw new SarifParseException("SARIF document contains no runs");
+        } catch (IOException e) {
+            throw new SarifParseException("SARIF report could not be read: " + e.getMessage(), e);
+        }
+    }
+
+    private ToolIdentity peekToolFromRuns(JsonParser parser) throws IOException {
+        if (parser.currentToken() != JsonToken.START_ARRAY) {
+            throw new SarifParseException("SARIF \"runs\" is not an array");
+        }
+        if (parser.nextToken() == JsonToken.END_ARRAY) {
+            throw new SarifParseException("SARIF document contains no runs");
+        }
+        if (parser.currentToken() != JsonToken.START_OBJECT) {
+            throw new SarifParseException("SARIF run is not an object");
+        }
+        while (parser.nextToken() == JsonToken.FIELD_NAME) {
+            String field = parser.currentName();
+            parser.nextToken();
+            if ("tool".equals(field)) {
+                ToolInfo tool = readTool(parser);
+                if (tool.name() == null || tool.name().isBlank()) {
+                    throw new SarifParseException("SARIF run does not name its tool");
+                }
+                return new ToolIdentity(tool.name(), tool.effectiveVersion());
+            }
+            skipValue(parser);
+        }
+        throw new SarifParseException("SARIF run does not name its tool");
+    }
+
+    /** The two fields {@link #peekToolIdentity} bothers to read. */
+    public record ToolIdentity(String name, String version) {
+    }
+
+    /**
      * Parses {@code sarif}, delivering every usable finding to {@code batchConsumer} in parse
      * order, in batches of at most {@code batchSize} - where the caller's JDBC/JPA batch insert
      * should happen (§4.2's "batched inserts of 1,000") - and also returning the complete,

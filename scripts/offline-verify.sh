@@ -33,25 +33,35 @@ for jar in junit-platform-console-standalone assertj-core jackson-databind jacks
   fi
 done
 
-# Every package here is verified below (see "verifying package boundaries") to contain no import
-# of org.springframework.*, jakarta.persistence.* or jakarta.servlet.*/jakarta.validation.*.
-# Sibling packages under the same parent (common/config, common/error, ingestion/domain, most of
-# tenancy) do depend on Spring/JPA and are deliberately not listed.
-MAIN_PACKAGES=(
+# Entries may be a package directory (every *.java under it) or a single file - the latter for
+# packages that mix a few dependency-free value types/enums in with JPA entities (gate/domain,
+# ingestion/domain), the same way the main source tree itself mixes them: naming is "this is the
+# domain model", not "this has no framework dependency", so this script has to be more precise
+# than a directory for those.
+MAIN_ENTRIES=(
   common/domain
   common/hash
   common/util
-  gate/domain
+  gate/domain/ConditionOutcome.java
+  gate/domain/ConditionType.java
+  gate/domain/GateCondition.java
+  gate/domain/GateInput.java
+  gate/domain/GateOutcome.java
+  gate/domain/GateStatus.java
+  gate/domain/QualityGateDefinition.java
   gate/service
-  github/service
+  github/service/NoopScmRenameResolver.java
+  github/service/ScmRenameResolver.java
+  github/service/WebhookSignatureVerifier.java
+  ingestion/domain/RunStatus.java
   ingestion/sarif
   ingestion/worker
   matching
 )
-TEST_PACKAGES=(
+TEST_ENTRIES=(
   common
   gate
-  github
+  github/WebhookSignatureVerifierTest.java
   ingestion/sarif
   ingestion/worker
   matching
@@ -60,26 +70,34 @@ TEST_PACKAGES=(
 rm -rf "$OUT"
 mkdir -p "$OUT/classes" "$OUT/test-classes" "$OUT/reports"
 
-collect() {
+# Resolves each entry to its *.java files (recursively for a directory, itself for a file) and
+# prints one path per line.
+resolve() {
   local base=$1
   shift
-  for pkg in "$@"; do
-    [ -d "$base/$pkg" ] && find "$base/$pkg" -name '*.java'
+  for entry in "$@"; do
+    local path="$base/$entry"
+    if [ -d "$path" ]; then
+      find "$path" -name '*.java'
+    elif [ -f "$path" ]; then
+      echo "$path"
+    else
+      echo "expected a file or directory at $path (entry: $entry)" >&2
+      exit 1
+    fi
   done
   return 0
 }
 
-echo "== verifying package boundaries (no Spring/JPA/servlet imports under the packages this script compiles)"
-for pkg in "${MAIN_PACKAGES[@]}"; do
-  if grep -rl 'org\.springframework\|jakarta\.\(persistence\|servlet\|validation\)' \
-      "$ROOT/src/main/java/dev/youneskaouani/vestige/$pkg" 2>/dev/null; then
-    echo "$pkg contains a Spring/JPA/servlet import - remove it from MAIN_PACKAGES or fix the import" >&2
-    exit 1
-  fi
-done
+echo "== verifying package boundaries (no Spring/JPA/servlet imports in anything this script compiles)"
+MAIN_SRC=$(resolve "$ROOT/src/main/java/dev/youneskaouani/vestige" "${MAIN_ENTRIES[@]}")
+if echo "$MAIN_SRC" | xargs grep -l 'org\.springframework\|jakarta\.\(persistence\|servlet\|validation\)' 2>/dev/null; then
+  echo "one or more MAIN_ENTRIES files above import Spring/JPA/servlet - fix the import, or if the" >&2
+  echo "file genuinely needs the framework, remove it from MAIN_ENTRIES in this script" >&2
+  exit 1
+fi
 
-MAIN_SRC=$(collect "$ROOT/src/main/java/dev/youneskaouani/vestige" "${MAIN_PACKAGES[@]}")
-TEST_SRC=$(collect "$ROOT/src/test/java/dev/youneskaouani/vestige" "${TEST_PACKAGES[@]}")
+TEST_SRC=$(resolve "$ROOT/src/test/java/dev/youneskaouani/vestige" "${TEST_ENTRIES[@]}")
 
 echo "== compiling main ($(echo "$MAIN_SRC" | wc -l) files)"
 # shellcheck disable=SC2086

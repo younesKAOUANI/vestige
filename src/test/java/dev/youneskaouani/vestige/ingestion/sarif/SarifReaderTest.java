@@ -412,6 +412,43 @@ class SarifReaderTest {
         assertThat(report.findings()).isEmpty();
     }
 
+    @Test
+    @DisplayName("peekToolIdentity reads the tool name and version without needing results at all")
+    void peekToolIdentityIgnoresResultsAndArtifacts() {
+        String sarif =
+                """
+                {
+                  "runs": [
+                    {
+                      "tool": { "driver": { "name": "CodeQL", "semanticVersion": "2.15.3" } },
+                      "results": [ { "thisIsNotEvenValidResultShape": true } ],
+                      "artifacts": [ { "location": { "uri": "whatever" } } ]
+                    }
+                  ]
+                }
+                """;
+
+        SarifReader.ToolIdentity identity = reader.peekToolIdentity(bytes(sarif));
+
+        assertThat(identity.name()).isEqualTo("CodeQL");
+        assertThat(identity.version()).isEqualTo("2.15.3");
+    }
+
+    @Test
+    @DisplayName("peekToolIdentity rejects a run with no tool name, same as a full read would")
+    void peekToolIdentityRejectsAMissingToolName() {
+        assertThatThrownBy(() -> reader.peekToolIdentity(bytes("{ \"runs\": [ { \"results\": [] } ] }")))
+                .isInstanceOf(SarifParseException.class);
+    }
+
+    @Test
+    @DisplayName("peekToolIdentity rejects an empty payload and a document with no runs")
+    void peekToolIdentityRejectsEmptyAndNoRuns() {
+        assertThatThrownBy(() -> reader.peekToolIdentity(new byte[0])).isInstanceOf(SarifParseException.class);
+        assertThatThrownBy(() -> reader.peekToolIdentity(bytes("{ \"runs\": [] }")))
+                .isInstanceOf(SarifParseException.class);
+    }
+
     private static String toolOnlySarif(String toolJson) {
         return """
                 { "runs": [ { "tool": %s, "results": [] } ] }
