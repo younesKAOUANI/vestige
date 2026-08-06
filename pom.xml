@@ -33,10 +33,22 @@
   </developers>
 
   <properties>
+    <!-- The JDK actually running the build; see maven.compiler.release below for the language
+         level the bytecode targets. -->
     <java.version>21</java.version>
+    <!-- Target level per the brief: portable to the JDK 17 most production Spring Boot 3.x
+         fleets still run, even though this build runs on 21. -->
+    <maven.compiler.release>17</maven.compiler.release>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <springdoc.version>2.6.0</springdoc.version>
     <testcontainers.version>1.20.3</testcontainers.version>
+    <restassured.version>5.5.0</restassured.version>
+    <spotless.version>2.43.0</spotless.version>
+    <jacoco.version>0.8.12</jacoco.version>
+    <!-- JUnit 5's own tag, not a Maven property Surefire understands natively - kept as one
+         constant so the exclusion in the default build and the inclusion in -Pintegration can
+         never drift apart. -->
+    <integration.tag>integration</integration.tag>
   </properties>
 
   <dependencies>
@@ -97,6 +109,12 @@
       <artifactId>postgresql</artifactId>
       <scope>test</scope>
     </dependency>
+    <dependency>
+      <groupId>io.rest-assured</groupId>
+      <artifactId>rest-assured</artifactId>
+      <version>${restassured.version}</version>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
 
   <dependencyManagement>
@@ -116,13 +134,6 @@
       <testResource>
         <directory>src/test/resources</directory>
       </testResource>
-      <!-- The SARIF fixtures are consumed by the tests and by scripts/demo.sh. Putting the one
-           copy on the test classpath is what keeps the demo and the tests honest about each
-           other. -->
-      <testResource>
-        <directory>sarif-fixtures</directory>
-        <targetPath>sarif-fixtures</targetPath>
-      </testResource>
     </testResources>
     <plugins>
       <plugin>
@@ -139,27 +150,94 @@
           </compilerArgs>
         </configuration>
       </plugin>
+
+      <!-- `mvn test` (and every plain lifecycle run, including plain `mvn verify`) exercises only
+           unit tests: Testcontainers needs a Docker daemon this build cannot assume it has, so
+           anything tagged "integration" is excluded here and picked up only by the profile below.
+           See README "Testing" for the rationale and docs/adr for how @Tag is applied. -->
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-surefire-plugin</artifactId>
         <configuration>
-          <excludes>
-            <exclude>**/*IT.java</exclude>
-          </excludes>
+          <excludedGroups>${integration.tag}</excludedGroups>
         </configuration>
       </plugin>
+
       <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-failsafe-plugin</artifactId>
+        <groupId>org.jacoco</groupId>
+        <artifactId>jacoco-maven-plugin</artifactId>
+        <version>${jacoco.version}</version>
         <executions>
           <execution>
+            <id>jacoco-agent</id>
             <goals>
-              <goal>integration-test</goal>
-              <goal>verify</goal>
+              <goal>prepare-agent</goal>
+            </goals>
+          </execution>
+          <execution>
+            <!-- Report only, not check: a coverage gate is only honest once it has been run
+                 somewhere that can actually see the number it is gating on. CI enforces it. -->
+            <id>jacoco-report</id>
+            <phase>test</phase>
+            <goals>
+              <goal>report</goal>
             </goals>
           </execution>
         </executions>
       </plugin>
+
+      <!-- Configured, not bound to the default lifecycle: `mvn spotless:check` /
+           `mvn spotless:apply` work locally, and CI (ci.yml) runs spotless:check as its own
+           step, where it has the network access to fetch google-java-format that this build
+           cannot assume either. -->
+      <plugin>
+        <groupId>com.diffplug.spotless</groupId>
+        <artifactId>spotless-maven-plugin</artifactId>
+        <version>${spotless.version}</version>
+        <configuration>
+          <java>
+            <googleJavaFormat/>
+            <removeUnusedImports/>
+            <importOrder/>
+            <trimTrailingWhitespace/>
+            <endWithNewline/>
+          </java>
+        </configuration>
+      </plugin>
     </plugins>
   </build>
+
+  <profiles>
+    <profile>
+      <!-- `mvn verify -Pintegration`: the full set. Surefire still runs the unit tests as part of
+           the standard `test` phase; Failsafe adds everything tagged "integration" (Testcontainers
+           against a real Postgres) at integration-test/verify, and fails the build on either
+           suite's failure. -->
+      <id>integration</id>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-failsafe-plugin</artifactId>
+            <configuration>
+              <groups>${integration.tag}</groups>
+              <includes>
+                <include>**/*Test.java</include>
+                <include>**/*Tests.java</include>
+                <include>**/*IT.java</include>
+              </includes>
+            </configuration>
+            <executions>
+              <execution>
+                <goals>
+                  <goal>integration-test</goal>
+                  <goal>verify</goal>
+                </goals>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+  </profiles>
 </project>
