@@ -1,0 +1,15 @@
+diff --git a/src/main/java/com/example/OrderService.java b/src/main/java/com/example/OrderService.java
+--- a/src/main/java/com/example/OrderService.java
++++ b/src/main/java/com/example/OrderService.java
+@@ -22,8 +22,9 @@
+         return sum;
+     }
+ 
+-    public Optional<Order> findOrder(String id) {
+-        return Optional.ofNullable(repository.find(id)).map(Order::normalise);
++    public Order findOrder(String id) {
++        Order order = repository.find(id);
++        return order.normalise();
+     }
+ 
+     public Optional<Order> latest() {

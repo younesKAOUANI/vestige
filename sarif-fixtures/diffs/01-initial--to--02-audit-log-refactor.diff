@@ -1,0 +1,46 @@
+diff --git a/src/main/java/com/example/OrderService.java b/src/main/java/com/example/OrderService.java
+--- a/src/main/java/com/example/OrderService.java
++++ b/src/main/java/com/example/OrderService.java
+@@ -1,18 +1,16 @@
+ package com.example;
+ 
+ import java.util.List;
++import java.util.Objects;
+ 
+ public class OrderService {
+ 
+     private final OrderRepository repository;
++    private final AuditLog auditLog;
+ 
+-    public OrderService(OrderRepository repository) {
+-        this.repository = repository;
+-    }
+-
+-    public Order findOrder(String id) {
+-        Order order = repository.find(id);
+-        return order.normalise();
++    public OrderService(OrderRepository repository, AuditLog auditLog) {
++        this.repository = Objects.requireNonNull(repository);
++        this.auditLog = Objects.requireNonNull(auditLog);
+     }
+ 
+     public double total(List<Order> orders) {
+@@ -23,11 +21,12 @@
+         return sum;
+     }
+ 
+-    public void refresh() {
+-        try {
+-            repository.reload();
+-        } catch (Exception e) {
+-            return;
+-        }
++    public Order findOrder(String id) {
++        Order order = repository.find(id);
++        return order.normalise();
++    }
++
++    public Order latest() {
++        return repository.latest().normalise();
+     }
+ }

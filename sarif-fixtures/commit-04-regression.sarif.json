@@ -1,0 +1,118 @@
+{
+  "$schema": "https://json.schemastore.org/sarif-2.1.0.json",
+  "version": "2.1.0",
+  "runs": [
+    {
+      "tool": {
+        "driver": {
+          "name": "demo-java-analyzer",
+          "version": "1.4.0",
+          "semanticVersion": "1.4.0",
+          "informationUri": "https://github.com/younesKAOUANI/vestige",
+          "rules": [
+            {
+              "id": "java:S2184",
+              "name": "Math operands should be cast before assignment",
+              "shortDescription": {
+                "text": "Math operands should be cast before assignment"
+              },
+              "defaultConfiguration": {
+                "level": "warning"
+              },
+              "properties": {
+                "tags": [
+                  "java"
+                ],
+                "precision": "high"
+              }
+            },
+            {
+              "id": "java:S2259",
+              "name": "Null pointers should not be dereferenced",
+              "shortDescription": {
+                "text": "Null pointers should not be dereferenced"
+              },
+              "defaultConfiguration": {
+                "level": "error"
+              },
+              "properties": {
+                "tags": [
+                  "java"
+                ],
+                "precision": "high"
+              }
+            }
+          ]
+        }
+      },
+      "artifacts": [
+        {
+          "location": {
+            "uri": "src/main/java/com/example/OrderService.java"
+          },
+          "sourceLanguage": "java",
+          "contents": {
+            "text": "package com.example;\n\nimport java.util.List;\nimport java.util.Objects;\nimport java.util.Optional;\n\npublic class OrderService {\n\n    private final OrderRepository repository;\n    private final AuditLog auditLog;\n\n    public OrderService(OrderRepository repository, AuditLog auditLog) {\n        this.repository = Objects.requireNonNull(repository);\n        this.auditLog = Objects.requireNonNull(auditLog);\n    }\n\n    public double total(List<Order> orders) {\n        double sum = 0;\n        for (Order order : orders) {\n            sum += order.amount();\n        }\n        return sum;\n    }\n\n    public Order findOrder(String id) {\n        Order order = repository.find(id);\n        return order.normalise();\n    }\n\n    public Optional<Order> latest() {\n        return Optional.ofNullable(repository.latest()).map(Order::normalise);\n    }\n}\n"
+          }
+        }
+      ],
+      "results": [
+        {
+          "ruleId": "java:S2184",
+          "level": "warning",
+          "message": {
+            "text": "Cast one of the operands of this addition operation to a \"double\"."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/main/java/com/example/OrderService.java",
+                  "index": 0
+                },
+                "region": {
+                  "startLine": 20,
+                  "endLine": 20,
+                  "startColumn": 9,
+                  "endColumn": 31
+                }
+              }
+            }
+          ],
+          "partialFingerprints": {
+            "primaryLocationLineHash/v1": "java:S2184:sum:stable"
+          }
+        },
+        {
+          "ruleId": "java:S2259",
+          "level": "error",
+          "message": {
+            "text": "A \"NullPointerException\" could be thrown; \"order\" is nullable here."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "src/main/java/com/example/OrderService.java",
+                  "index": 0
+                },
+                "region": {
+                  "startLine": 27,
+                  "endLine": 27,
+                  "startColumn": 9,
+                  "endColumn": 34
+                }
+              }
+            }
+          ],
+          "properties": {
+            "security-severity": "9.1"
+          },
+          "partialFingerprints": {
+            "primaryLocationLineHash/v1": "java:S2259:order:stable"
+          }
+        }
+      ]
+    }
+  ]
+}

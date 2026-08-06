@@ -112,6 +112,18 @@
   </dependencyManagement>
 
   <build>
+    <testResources>
+      <testResource>
+        <directory>src/test/resources</directory>
+      </testResource>
+      <!-- The SARIF fixtures are consumed by the tests and by scripts/demo.sh. Putting the one
+           copy on the test classpath is what keeps the demo and the tests honest about each
+           other. -->
+      <testResource>
+        <directory>sarif-fixtures</directory>
+        <targetPath>sarif-fixtures</targetPath>
+      </testResource>
+    </testResources>
     <plugins>
       <plugin>
         <groupId>org.springframework.boot</groupId>

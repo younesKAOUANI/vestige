@@ -1,0 +1,28 @@
+diff --git a/src/main/java/com/example/OrderService.java b/src/main/java/com/example/OrderService.java
+--- a/src/main/java/com/example/OrderService.java
++++ b/src/main/java/com/example/OrderService.java
+@@ -2,6 +2,7 @@
+ 
+ import java.util.List;
+ import java.util.Objects;
++import java.util.Optional;
+ 
+ public class OrderService {
+ 
+@@ -21,12 +22,11 @@
+         return sum;
+     }
+ 
+-    public Order findOrder(String id) {
+-        Order order = repository.find(id);
+-        return order.normalise();
++    public Optional<Order> findOrder(String id) {
++        return Optional.ofNullable(repository.find(id)).map(Order::normalise);
+     }
+ 
+-    public Order latest() {
+-        return repository.latest().normalise();
++    public Optional<Order> latest() {
++        return Optional.ofNullable(repository.latest()).map(Order::normalise);
+     }
+ }
