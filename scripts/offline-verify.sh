@@ -49,21 +49,22 @@ MAIN_ENTRIES=(
   gate/domain/GateOutcome.java
   gate/domain/GateStatus.java
   gate/domain/QualityGateDefinition.java
-  gate/service
+  gate/service/QualityGateEvaluator.java
   github/service/NoopScmRenameResolver.java
   github/service/ScmRenameResolver.java
   github/service/WebhookSignatureVerifier.java
   ingestion/domain/RunStatus.java
   ingestion/sarif
-  ingestion/worker
+  ingestion/worker/ClaimedJob.java
+  ingestion/worker/RetryPolicy.java
   matching
 )
 TEST_ENTRIES=(
   common
-  gate
+  gate/QualityGateEvaluatorTest.java
   github/WebhookSignatureVerifierTest.java
   ingestion/sarif
-  ingestion/worker
+  ingestion/worker/RetryPolicyTest.java
   matching
 )
 
