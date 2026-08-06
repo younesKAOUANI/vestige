@@ -46,8 +46,8 @@ public class ApiKeyAuthenticationFilter extends OncePerRequestFilter {
      * Paths that are not tenant-scoped. Webhooks authenticate with an HMAC over the body instead,
      * and the docs and health endpoints are deliberately open.
      */
-    private static final List<String> UNAUTHENTICATED_PREFIXES =
-            List.of("/webhooks/", "/actuator/health", "/v3/api-docs", "/swagger-ui", "/error");
+    private static final List<String> UNAUTHENTICATED_PREFIXES = List.of(
+            "/api/v1/webhooks/", "/actuator/health", "/v3/api-docs", "/swagger-ui", "/error");
 
     private final ApiKeyAuthenticator authenticator;
     private final ObjectMapper objectMapper;
