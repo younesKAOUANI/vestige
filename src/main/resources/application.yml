@@ -28,11 +28,6 @@ spring:
     placeholders:
       appPassword: ${VESTIGE_APP_DB_PASSWORD:vestige_app_dev_password}
 
-  servlet:
-    multipart:
-      max-file-size: 210MB
-      max-request-size: 210MB
-
 server:
   port: ${PORT:8080}
   # A blocked-looking upload (a huge SARIF body) should not park a thread for longer than a slow CI

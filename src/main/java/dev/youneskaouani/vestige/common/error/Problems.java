@@ -45,4 +45,11 @@ public final class Problems {
             super(HttpStatus.FORBIDDEN, "forbidden", message);
         }
     }
+
+    /** A request body exceeded {@code vestige.ingestion.max-report-bytes} (§4.3). */
+    public static final class PayloadTooLarge extends VestigeException {
+        public PayloadTooLarge(String message) {
+            super(HttpStatus.PAYLOAD_TOO_LARGE, "payload-too-large", message);
+        }
+    }
 }
