@@ -32,7 +32,8 @@ class LineNormalizerTest {
     @Test
     @DisplayName("does not let an escaped quote end a literal early")
     void respectsBackslashEscapes() {
-        assertThat(LineNormalizer.normalize("String s = \"a \\\"quoted\\\" word\";")).isEqualTo("String s = §;");
+        assertThat(LineNormalizer.normalize("String s = \"a \\\"quoted\\\" word\";"))
+                .isEqualTo("String s = §;");
     }
 
     @Test

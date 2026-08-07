@@ -25,10 +25,13 @@ class GitHubScmRenameResolverTest {
     void extractsOnlyRenamedFiles() {
         RestClient.Builder builder = RestClient.builder();
         MockRestServiceServer server = MockRestServiceServer.bindTo(builder).build();
-        server.expect(requestTo("https://api.github.com/repos/acme/widgets/compare/base123...head456"))
+        server.expect(
+                        requestTo(
+                                "https://api.github.com/repos/acme/widgets/compare/base123...head456"))
                 .andExpect(method(HttpMethod.GET))
-                .andRespond(withSuccess(
-                        """
+                .andRespond(
+                        withSuccess(
+                                """
                         {
                           "files": [
                             { "filename": "src/Billing.java", "status": "renamed",
@@ -37,20 +40,23 @@ class GitHubScmRenameResolverTest {
                           ]
                         }
                         """,
-                        MediaType.APPLICATION_JSON));
+                                MediaType.APPLICATION_JSON));
 
         GitHubScmRenameResolver resolver = new GitHubScmRenameResolver(builder, "token123");
 
-        Map<String, String> renames = resolver.renamesBetween("acme", "widgets", "base123", "head456");
+        Map<String, String> renames =
+                resolver.renamesBetween("acme", "widgets", "base123", "head456");
 
-        assertThat(renames).containsExactly(Map.entry("src/legacy/Billing.java", "src/Billing.java"));
+        assertThat(renames)
+                .containsExactly(Map.entry("src/legacy/Billing.java", "src/Billing.java"));
         server.verify();
     }
 
     @Test
     void returnsEmptyWithoutMakingARequestWhenThereIsNoBaseCommit() {
         RestClient.Builder builder = RestClient.builder();
-        MockRestServiceServer server = MockRestServiceServer.bindTo(builder).build(); // expects nothing
+        MockRestServiceServer server =
+                MockRestServiceServer.bindTo(builder).build(); // expects nothing
 
         GitHubScmRenameResolver resolver = new GitHubScmRenameResolver(builder, "token123");
 
@@ -62,7 +68,9 @@ class GitHubScmRenameResolverTest {
     void degradesToEmptyWhenGitHubIsUnreachable() {
         RestClient.Builder builder = RestClient.builder();
         MockRestServiceServer server = MockRestServiceServer.bindTo(builder).build();
-        server.expect(requestTo("https://api.github.com/repos/acme/widgets/compare/base123...head456"))
+        server.expect(
+                        requestTo(
+                                "https://api.github.com/repos/acme/widgets/compare/base123...head456"))
                 .andRespond(withServerError());
 
         GitHubScmRenameResolver resolver = new GitHubScmRenameResolver(builder, "token123");
@@ -75,7 +83,9 @@ class GitHubScmRenameResolverTest {
     void ignoresAResponseWithNoRenamedFiles() {
         RestClient.Builder builder = RestClient.builder();
         MockRestServiceServer server = MockRestServiceServer.bindTo(builder).build();
-        server.expect(requestTo("https://api.github.com/repos/acme/widgets/compare/base123...head456"))
+        server.expect(
+                        requestTo(
+                                "https://api.github.com/repos/acme/widgets/compare/base123...head456"))
                 .andRespond(withSuccess("{ \"files\": [] }", MediaType.APPLICATION_JSON));
 
         GitHubScmRenameResolver resolver = new GitHubScmRenameResolver(builder, "token123");

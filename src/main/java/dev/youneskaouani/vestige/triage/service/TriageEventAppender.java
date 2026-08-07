@@ -28,7 +28,8 @@ public class TriageEventAppender {
     private final AuditChainHeadRepository headRepository;
     private final TriageEventRepository eventRepository;
 
-    public TriageEventAppender(AuditChainHeadRepository headRepository, TriageEventRepository eventRepository) {
+    public TriageEventAppender(
+            AuditChainHeadRepository headRepository, TriageEventRepository eventRepository) {
         this.headRepository = headRepository;
         this.eventRepository = eventRepository;
     }
@@ -52,25 +53,29 @@ public class TriageEventAppender {
             String justification,
             Instant now) {
         AuditChainHead head =
-                headRepository.lockForOrganization(organizationId).orElseGet(() -> new AuditChainHead(organizationId, now));
+                headRepository
+                        .lockForOrganization(organizationId)
+                        .orElseGet(() -> new AuditChainHead(organizationId, now));
 
         Map<String, Object> payload =
-                TriageEvent.canonicalPayload(issueId, actor, fromStatus, toStatus, justification, now);
+                TriageEvent.canonicalPayload(
+                        issueId, actor, fromStatus, toStatus, justification, now);
         String entryHash = HashChain.entryHash(head.getLastHash(), payload);
         long sequenceNumber = head.getLength() + 1;
 
-        TriageEvent event = new TriageEvent(
-                UUID.randomUUID(),
-                organizationId,
-                issueId,
-                sequenceNumber,
-                actor,
-                fromStatus,
-                toStatus,
-                justification,
-                now,
-                head.getLastHash(),
-                entryHash);
+        TriageEvent event =
+                new TriageEvent(
+                        UUID.randomUUID(),
+                        organizationId,
+                        issueId,
+                        sequenceNumber,
+                        actor,
+                        fromStatus,
+                        toStatus,
+                        justification,
+                        now,
+                        head.getLastHash(),
+                        entryHash);
         eventRepository.save(event);
 
         head.advance(entryHash, now);

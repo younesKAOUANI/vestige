@@ -16,8 +16,8 @@ import java.util.UUID;
  * simplification and is called out in the README.
  *
  * <p>No diff column: file-rename resolution is {@code ScmRenameResolver}'s job against the
- * provider's compare API (§3.2), not a client-supplied unified diff, so there is nothing diff-shaped
- * to persist here.
+ * provider's compare API (§3.2), not a client-supplied unified diff, so there is nothing
+ * diff-shaped to persist here.
  */
 @Entity
 @Table(name = "analysis_report_payload")
@@ -40,7 +40,8 @@ public class AnalysisReportPayload {
         // for JPA
     }
 
-    public AnalysisReportPayload(UUID analysisRunId, UUID organizationId, byte[] sarif, Instant receivedAt) {
+    public AnalysisReportPayload(
+            UUID analysisRunId, UUID organizationId, byte[] sarif, Instant receivedAt) {
         this.analysisRunId = analysisRunId;
         this.organizationId = organizationId;
         this.sarif = sarif.clone();

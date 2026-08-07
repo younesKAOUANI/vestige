@@ -21,8 +21,7 @@ import java.util.UUID;
 @Table(name = "branch")
 public class Branch {
 
-    @Id
-    private UUID id;
+    @Id private UUID id;
 
     @Column(name = "organization_id", nullable = false)
     private UUID organizationId;
@@ -46,7 +45,13 @@ public class Branch {
         // for JPA
     }
 
-    public Branch(UUID id, UUID organizationId, UUID projectId, String name, boolean reference, Instant createdAt) {
+    public Branch(
+            UUID id,
+            UUID organizationId,
+            UUID projectId,
+            String name,
+            boolean reference,
+            Instant createdAt) {
         this.id = id;
         this.organizationId = organizationId;
         this.projectId = projectId;

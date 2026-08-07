@@ -31,7 +31,8 @@ class PathNormalizerTest {
     @Test
     @DisplayName("collapses doubled slashes and interior ./ segments")
     void collapsesRedundantSegments() {
-        assertThat(PathNormalizer.normalize("src//main/./java//Main.java")).isEqualTo("src/main/java/Main.java");
+        assertThat(PathNormalizer.normalize("src//main/./java//Main.java"))
+                .isEqualTo("src/main/java/Main.java");
     }
 
     @Test
@@ -43,7 +44,8 @@ class PathNormalizerTest {
     @Test
     @DisplayName("preserves case: file systems that matter here are case-sensitive")
     void preservesCase() {
-        assertThat(PathNormalizer.normalize("src/Main.java")).isNotEqualTo(PathNormalizer.normalize("src/main.java"));
+        assertThat(PathNormalizer.normalize("src/Main.java"))
+                .isNotEqualTo(PathNormalizer.normalize("src/main.java"));
     }
 
     @Test

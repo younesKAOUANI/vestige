@@ -35,14 +35,11 @@ class GateConfigServiceTest {
     private static final UUID ORG_ID = UUID.randomUUID();
     private static final Instant NOW = Instant.parse("2026-01-01T00:00:00Z");
 
-    @Mock
-    private QualityGateRepository gateRepository;
+    @Mock private QualityGateRepository gateRepository;
 
-    @Mock
-    private QualityGateConditionRepository conditionRepository;
+    @Mock private QualityGateConditionRepository conditionRepository;
 
-    @Mock
-    private ProjectRepository projectRepository;
+    @Mock private ProjectRepository projectRepository;
 
     private GateConfigService service;
 
@@ -64,18 +61,30 @@ class GateConfigServiceTest {
     }
 
     @Test
-    @DisplayName("a project's configured gate is assembled from its stored conditions, in position order")
+    @DisplayName(
+            "a project's configured gate is assembled from its stored conditions, in position order")
     void assemblesAConfiguredGateFromItsConditions() {
         UUID projectId = UUID.randomUUID();
         QualityGate gate = new QualityGate(UUID.randomUUID(), ORG_ID, projectId, "Strict", NOW);
         when(projectRepository.existsById(projectId)).thenReturn(true);
         when(gateRepository.findByProjectId(projectId)).thenReturn(Optional.of(gate));
         when(conditionRepository.findAllByQualityGateIdOrderByPosition(gate.getId()))
-                .thenReturn(List.of(
-                        new QualityGateCondition(
-                                UUID.randomUUID(), ORG_ID, gate.getId(), ConditionType.NEW_CRITICAL_ISSUES, 0, 0),
-                        new QualityGateCondition(
-                                UUID.randomUUID(), ORG_ID, gate.getId(), ConditionType.TOTAL_BLOCKER_ISSUES, 2, 1)));
+                .thenReturn(
+                        List.of(
+                                new QualityGateCondition(
+                                        UUID.randomUUID(),
+                                        ORG_ID,
+                                        gate.getId(),
+                                        ConditionType.NEW_CRITICAL_ISSUES,
+                                        0,
+                                        0),
+                                new QualityGateCondition(
+                                        UUID.randomUUID(),
+                                        ORG_ID,
+                                        gate.getId(),
+                                        ConditionType.TOTAL_BLOCKER_ISSUES,
+                                        2,
+                                        1)));
 
         QualityGateDefinition definition = service.getGate(projectId);
 
@@ -87,7 +96,8 @@ class GateConfigServiceTest {
     }
 
     @Test
-    @DisplayName("reading the gate of a project that does not exist (or is not this tenant's) is a 404")
+    @DisplayName(
+            "reading the gate of a project that does not exist (or is not this tenant's) is a 404")
     void readingAMissingProjectsGateIsNotFound() {
         UUID projectId = UUID.randomUUID();
         when(projectRepository.existsById(projectId)).thenReturn(false);
@@ -97,17 +107,19 @@ class GateConfigServiceTest {
     }
 
     @Test
-    @DisplayName("PUT replaces a first-ever gate: a new QualityGate row, and one condition row per entry")
+    @DisplayName(
+            "PUT replaces a first-ever gate: a new QualityGate row, and one condition row per entry")
     void createsAGateAndItsConditionsOnFirstConfiguration() {
         UUID projectId = UUID.randomUUID();
         when(projectRepository.existsById(projectId)).thenReturn(true);
         when(gateRepository.findByProjectId(projectId)).thenReturn(Optional.empty());
         when(gateRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
-        QualityGateDefinition requested = new QualityGateDefinition(
-                "Custom",
-                List.of(
-                        new GateCondition(ConditionType.NEW_ISSUES_TOTAL, 3),
-                        new GateCondition(ConditionType.REOPENED_ISSUES, 0)));
+        QualityGateDefinition requested =
+                new QualityGateDefinition(
+                        "Custom",
+                        List.of(
+                                new GateCondition(ConditionType.NEW_ISSUES_TOTAL, 3),
+                                new GateCondition(ConditionType.REOPENED_ISSUES, 0)));
 
         QualityGateDefinition result = service.replaceGate(ORG_ID, projectId, requested, NOW);
 
@@ -116,7 +128,8 @@ class GateConfigServiceTest {
         verify(gateRepository).save(gateCaptor.capture());
         assertThat(gateCaptor.getValue().getName()).isEqualTo("Custom");
 
-        ArgumentCaptor<QualityGateCondition> conditionCaptor = ArgumentCaptor.forClass(QualityGateCondition.class);
+        ArgumentCaptor<QualityGateCondition> conditionCaptor =
+                ArgumentCaptor.forClass(QualityGateCondition.class);
         verify(conditionRepository, times(2)).save(conditionCaptor.capture());
         List<QualityGateCondition> saved = conditionCaptor.getAllValues();
         assertThat(saved.get(0).getConditionType()).isEqualTo(ConditionType.NEW_ISSUES_TOTAL);
@@ -126,14 +139,17 @@ class GateConfigServiceTest {
     }
 
     @Test
-    @DisplayName("PUT on an already-configured gate renames the existing row rather than creating a second one")
+    @DisplayName(
+            "PUT on an already-configured gate renames the existing row rather than creating a second one")
     void renamesAnExistingGateInsteadOfDuplicatingIt() {
         UUID projectId = UUID.randomUUID();
-        QualityGate existing = new QualityGate(UUID.randomUUID(), ORG_ID, projectId, "Old name", NOW);
+        QualityGate existing =
+                new QualityGate(UUID.randomUUID(), ORG_ID, projectId, "Old name", NOW);
         when(projectRepository.existsById(projectId)).thenReturn(true);
         when(gateRepository.findByProjectId(projectId)).thenReturn(Optional.of(existing));
         QualityGateDefinition requested =
-                new QualityGateDefinition("New name", List.of(new GateCondition(ConditionType.REOPENED_ISSUES, 1)));
+                new QualityGateDefinition(
+                        "New name", List.of(new GateCondition(ConditionType.REOPENED_ISSUES, 1)));
 
         service.replaceGate(ORG_ID, projectId, requested, NOW);
 

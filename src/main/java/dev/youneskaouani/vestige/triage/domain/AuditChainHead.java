@@ -11,12 +11,12 @@ import java.util.UUID;
 /**
  * The current tail of one organisation's triage hash chain (§6).
  *
- * <p>This row - one per organisation - is what {@code TriageEventAppender} takes with {@code
- * SELECT ... FOR UPDATE} before computing a new entry's hash. That lock is what makes concurrent
- * triage within one organisation safe without a distributed lock: two transactions racing to
- * append both need this exact row, so the second one waits, sees the first one's committed
- * {@code lastHash}, and chains onto <em>that</em> - never onto a stale value. Concurrent triage in
- * two <em>different</em> organisations never contends, since they lock different rows.
+ * <p>This row - one per organisation - is what {@code TriageEventAppender} takes with {@code SELECT
+ * ... FOR UPDATE} before computing a new entry's hash. That lock is what makes concurrent triage
+ * within one organisation safe without a distributed lock: two transactions racing to append both
+ * need this exact row, so the second one waits, sees the first one's committed {@code lastHash},
+ * and chains onto <em>that</em> - never onto a stale value. Concurrent triage in two
+ * <em>different</em> organisations never contends, since they lock different rows.
  */
 @Entity
 @Table(name = "audit_chain_head")
@@ -47,7 +47,9 @@ public class AuditChainHead {
         this.updatedAt = now;
     }
 
-    /** Advances the chain by one entry. Called only while this row is held under {@code FOR UPDATE}. */
+    /**
+     * Advances the chain by one entry. Called only while this row is held under {@code FOR UPDATE}.
+     */
     public void advance(String newEntryHash, Instant now) {
         this.length++;
         this.lastHash = newEntryHash;

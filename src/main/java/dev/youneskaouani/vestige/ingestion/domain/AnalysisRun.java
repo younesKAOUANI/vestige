@@ -14,8 +14,7 @@ import java.util.UUID;
 @Table(name = "analysis_run")
 public class AnalysisRun {
 
-    @Id
-    private UUID id;
+    @Id private UUID id;
 
     @Column(name = "organization_id", nullable = false)
     private UUID organizationId;
@@ -120,14 +119,20 @@ public class AnalysisRun {
         this.completedAt = now;
     }
 
-    /** This attempt failed. Not terminal by itself - the outbox worker decides retry vs {@link #markQuarantined}. */
+    /**
+     * This attempt failed. Not terminal by itself - the outbox worker decides retry vs {@link
+     * #markQuarantined}.
+     */
     public void markFailed(String reason, Instant now) {
         this.status = RunStatus.FAILED;
         this.failureReason = truncate(reason);
         this.updatedAt = now;
     }
 
-    /** Terminal: {@code vestige.worker.max-attempts} exhausted. A {@code PoisonReport} is written alongside. */
+    /**
+     * Terminal: {@code vestige.worker.max-attempts} exhausted. A {@code PoisonReport} is written
+     * alongside.
+     */
     public void markQuarantined(String reason, Instant now) {
         this.status = RunStatus.QUARANTINED;
         this.failureReason = truncate(reason);

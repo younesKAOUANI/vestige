@@ -27,7 +27,8 @@ class Sha256Test {
     @Test
     @DisplayName("hashes bytes and their UTF-8 string form identically")
     void hashesBytesAndStringsAlike() {
-        assertThat(Sha256.hex("Genève".getBytes(StandardCharsets.UTF_8))).isEqualTo(Sha256.hex("Genève"));
+        assertThat(Sha256.hex("Genève".getBytes(StandardCharsets.UTF_8)))
+                .isEqualTo(Sha256.hex("Genève"));
     }
 
     @Test

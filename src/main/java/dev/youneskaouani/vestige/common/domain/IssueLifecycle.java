@@ -9,12 +9,12 @@ package dev.youneskaouani.vestige.common.domain;
  * RESOLVED_FIXED (auto)}. It does not spell out what happens to an issue a human has already
  * triaged away, because the domain narrative in §2.2 answers that separately: an issue goes "back
  * to REOPENED if it reappears <em>after being resolved</em>". Read literally, "resolved" already
- * excludes the two triage outcomes ({@link IssueStatus#RESOLVED_FALSE_POSITIVE},
- * {@link IssueStatus#RESOLVED_WONT_FIX}) — those are human judgements about code that may still be
- * flagged every single run, and flipping them back to {@code REOPENED} the next time the matcher
- * sees the same fingerprint would make triage pointless: the gate would fail again on a decision
- * the team already took (see {@code QualityGateEvaluator}, which excludes silenced issues for the
- * identical reason). So the rule this class encodes is:
+ * excludes the two triage outcomes ({@link IssueStatus#RESOLVED_FALSE_POSITIVE}, {@link
+ * IssueStatus#RESOLVED_WONT_FIX}) — those are human judgements about code that may still be flagged
+ * every single run, and flipping them back to {@code REOPENED} the next time the matcher sees the
+ * same fingerprint would make triage pointless: the gate would fail again on a decision the team
+ * already took (see {@code QualityGateEvaluator}, which excludes silenced issues for the identical
+ * reason). So the rule this class encodes is:
  *
  * <ul>
  *   <li>a human decision ({@link IssueStatus#isSilenced()}) is never overwritten by a re-sighting
@@ -29,8 +29,7 @@ package dev.youneskaouani.vestige.common.domain;
  */
 public final class IssueLifecycle {
 
-    private IssueLifecycle() {
-    }
+    private IssueLifecycle() {}
 
     /** The status of an issue whose fingerprint this run matched again. */
     public static IssueStatus afterSighting(IssueStatus current) {

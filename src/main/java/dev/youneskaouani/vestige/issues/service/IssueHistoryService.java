@@ -28,7 +28,10 @@ public class IssueHistoryService {
 
     @Transactional(readOnly = true)
     public IssueHistory history(UUID issueId) {
-        Issue issue = issueRepository.findById(issueId).orElseThrow(() -> new Problems.NotFound("Issue", issueId));
+        Issue issue =
+                issueRepository
+                        .findById(issueId)
+                        .orElseThrow(() -> new Problems.NotFound("Issue", issueId));
         return new IssueHistory(
                 issue,
                 findingRepository.findAllByIssueIdOrderBySeq(issueId),

@@ -11,8 +11,8 @@ import javax.crypto.spec.SecretKeySpec;
  * <p>Three details matter and all three are routinely got wrong:
  *
  * <ul>
- *   <li>the MAC is computed over the <em>raw</em> request body, so the controller must take
- *       {@code byte[]} and never a parsed object - re-serialising JSON changes the bytes;
+ *   <li>the MAC is computed over the <em>raw</em> request body, so the controller must take {@code
+ *       byte[]} and never a parsed object - re-serialising JSON changes the bytes;
  *   <li>the comparison must be time-constant, otherwise the header becomes an oracle that lets an
  *       attacker recover a valid signature byte by byte;
  *   <li>an absent or malformed header must fail closed.
@@ -53,7 +53,8 @@ public final class WebhookSignatureVerifier {
             mac.init(new SecretKeySpec(secret.getBytes(StandardCharsets.UTF_8), ALGORITHM));
             return PREFIX + toHex(mac.doFinal(payload));
         } catch (java.security.GeneralSecurityException e) {
-            throw new IllegalStateException("HmacSHA256 is required by every Java SE implementation", e);
+            throw new IllegalStateException(
+                    "HmacSHA256 is required by every Java SE implementation", e);
         }
     }
 

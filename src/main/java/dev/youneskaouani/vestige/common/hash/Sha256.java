@@ -15,11 +15,12 @@ public final class Sha256 {
 
     private static final char[] HEX = "0123456789abcdef".toCharArray();
 
-    /** ASCII record separator: cannot occur inside the values we hash, so it delimits fields safely. */
+    /**
+     * ASCII record separator: cannot occur inside the values we hash, so it delimits fields safely.
+     */
     private static final byte FIELD_SEPARATOR = 0x1E;
 
-    private Sha256() {
-    }
+    private Sha256() {}
 
     /** Returns the lowercase hex SHA-256 of {@code value} encoded as UTF-8. */
     public static String hex(String value) {
@@ -55,7 +56,8 @@ public final class Sha256 {
         try {
             return MessageDigest.getInstance("SHA-256");
         } catch (NoSuchAlgorithmException e) {
-            throw new IllegalStateException("SHA-256 is required by every Java SE implementation", e);
+            throw new IllegalStateException(
+                    "SHA-256 is required by every Java SE implementation", e);
         }
     }
 

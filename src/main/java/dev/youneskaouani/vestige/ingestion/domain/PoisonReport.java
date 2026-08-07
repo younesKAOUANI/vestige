@@ -18,8 +18,7 @@ import java.util.UUID;
 @Table(name = "poison_report")
 public class PoisonReport {
 
-    @Id
-    private UUID id;
+    @Id private UUID id;
 
     @Column(name = "organization_id", nullable = false)
     private UUID organizationId;
@@ -41,7 +40,12 @@ public class PoisonReport {
     }
 
     public PoisonReport(
-            UUID id, UUID organizationId, UUID analysisRunId, int attemptCount, String lastError, Instant createdAt) {
+            UUID id,
+            UUID organizationId,
+            UUID analysisRunId,
+            int attemptCount,
+            String lastError,
+            Instant createdAt) {
         this.id = id;
         this.organizationId = organizationId;
         this.analysisRunId = analysisRunId;

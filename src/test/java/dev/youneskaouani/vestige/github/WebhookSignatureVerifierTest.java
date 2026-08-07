@@ -19,7 +19,8 @@ class WebhookSignatureVerifierTest {
     @DisplayName("reproduces the signature from GitHub's own worked example")
     void matchesGitHubsPublishedVector() {
         assertThat(verifier.sign(PAYLOAD))
-                .isEqualTo("sha256=757107ea0eb2509fc211221cce984b8a37570b6d7586c22c46f4379c8b043e17");
+                .isEqualTo(
+                        "sha256=757107ea0eb2509fc211221cce984b8a37570b6d7586c22c46f4379c8b043e17");
     }
 
     @Test
@@ -32,7 +33,8 @@ class WebhookSignatureVerifierTest {
     @DisplayName("rejects a signature computed over different bytes")
     void rejectsATamperedPayload() {
         String signature = verifier.sign(PAYLOAD);
-        assertThat(verifier.isValid("Hello, World?".getBytes(StandardCharsets.UTF_8), signature)).isFalse();
+        assertThat(verifier.isValid("Hello, World?".getBytes(StandardCharsets.UTF_8), signature))
+                .isFalse();
     }
 
     @Test
@@ -47,7 +49,10 @@ class WebhookSignatureVerifierTest {
     void failsClosed() {
         assertThat(verifier.isValid(PAYLOAD, null)).isFalse();
         assertThat(verifier.isValid(PAYLOAD, "")).isFalse();
-        assertThat(verifier.isValid(PAYLOAD, "757107ea0eb2509fc211221cce984b8a37570b6d7586c22c46f4379c8b043e17"))
+        assertThat(
+                        verifier.isValid(
+                                PAYLOAD,
+                                "757107ea0eb2509fc211221cce984b8a37570b6d7586c22c46f4379c8b043e17"))
                 .isFalse();
         assertThat(verifier.isValid(PAYLOAD, "sha1=abc")).isFalse();
         assertThat(verifier.isValid(PAYLOAD, verifier.sign(PAYLOAD).substring(0, 20))).isFalse();
@@ -61,7 +66,8 @@ class WebhookSignatureVerifierTest {
     }
 
     @Test
-    @DisplayName("refuses to be constructed without a secret, so it cannot silently allow everything")
+    @DisplayName(
+            "refuses to be constructed without a secret, so it cannot silently allow everything")
     void requiresASecret() {
         assertThatThrownBy(() -> new WebhookSignatureVerifier(null))
                 .isInstanceOf(IllegalArgumentException.class);

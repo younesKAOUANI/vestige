@@ -1,8 +1,8 @@
 package dev.youneskaouani.vestige.matching.corpus;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import dev.youneskaouani.vestige.matching.Fingerprints;
 import dev.youneskaouani.vestige.matching.FingerprintFactory;
+import dev.youneskaouani.vestige.matching.Fingerprints;
 import dev.youneskaouani.vestige.matching.IncomingFinding;
 import dev.youneskaouani.vestige.matching.IssueMatcher;
 import dev.youneskaouani.vestige.matching.Match;
@@ -36,14 +36,14 @@ import java.util.UUID;
  *
  * <p>Rates are defined against two different denominators, deliberately: {@code falseSplitRate =
  * falseSplits / totalExpectedMatches} (of everything that should have matched, how much didn't),
- * {@code falseMergeRate = falseMerges / totalActualMatches} (of everything the matcher claimed,
- * how much was wrong). A case that expects zero matches (e.g. two genuinely unrelated findings)
+ * {@code falseMergeRate = falseMerges / totalActualMatches} (of everything the matcher claimed, how
+ * much was wrong). A case that expects zero matches (e.g. two genuinely unrelated findings)
  * contributes nothing to the split rate's denominator but still penalises a wrong merge if the
  * matcher pairs them anyway.
  *
  * <p>This class has no JUnit dependency, so it can be driven from a plain {@code main} method or a
- * notebook as well as from {@link MatcherCorpusHarnessTest}, which is the thing that turns a
- * {@link Report} into a pass/fail build gate.
+ * notebook as well as from {@link MatcherCorpusHarnessTest}, which is the thing that turns a {@link
+ * Report} into a pass/fail build gate.
  */
 public final class MatcherCorpusHarness {
 
@@ -54,7 +54,10 @@ public final class MatcherCorpusHarness {
         this.weakLineProximity = weakLineProximity;
     }
 
-    /** Parses every {@code *.json} file in {@code directory} and validates each case's internal references. */
+    /**
+     * Parses every {@code *.json} file in {@code directory} and validates each case's internal
+     * references.
+     */
     public List<CorpusCase> loadCases(Path directory) {
         List<CorpusCase> cases = new ArrayList<>();
         for (Path file : CorpusLocator.listCaseFiles(directory)) {
@@ -70,9 +73,10 @@ public final class MatcherCorpusHarness {
     }
 
     /**
-     * Feeds every case's {@code before}/{@code after} findings through {@link IssueMatcher}, applying
-     * each case's {@code renames} map to the previous side exactly as {@code IssueMatchingService}
-     * would (see the field-by-field walkthrough on {@link CorpusCase}), and scores the result.
+     * Feeds every case's {@code before}/{@code after} findings through {@link IssueMatcher},
+     * applying each case's {@code renames} map to the previous side exactly as {@code
+     * IssueMatchingService} would (see the field-by-field walkthrough on {@link CorpusCase}), and
+     * scores the result.
      */
     public Report evaluate(List<CorpusCase> cases) {
         IssueMatcher matcher = new IssueMatcher(weakLineProximity);
@@ -108,21 +112,28 @@ public final class MatcherCorpusHarness {
                     correctMatches++;
                 } else {
                     falseMerges++;
-                    failures.add(corpusCase.id() + ": false merge - matcher produced " + pairing
-                            + ", which the fixture does not expect");
+                    failures.add(
+                            corpusCase.id()
+                                    + ": false merge - matcher produced "
+                                    + pairing
+                                    + ", which the fixture does not expect");
                 }
             }
             for (String pairing : expected) {
                 if (!actual.contains(pairing)) {
                     falseSplits++;
-                    failures.add(corpusCase.id() + ": false split - matcher failed to produce expected "
-                            + pairing);
+                    failures.add(
+                            corpusCase.id()
+                                    + ": false split - matcher failed to produce expected "
+                                    + pairing);
                 }
             }
         }
 
-        double falseSplitRate = totalExpectedMatches == 0 ? 0.0 : (double) falseSplits / totalExpectedMatches;
-        double falseMergeRate = totalActualMatches == 0 ? 0.0 : (double) falseMerges / totalActualMatches;
+        double falseSplitRate =
+                totalExpectedMatches == 0 ? 0.0 : (double) falseSplits / totalExpectedMatches;
+        double falseMergeRate =
+                totalActualMatches == 0 ? 0.0 : (double) falseMerges / totalActualMatches;
 
         return new Report(
                 cases.size(),
@@ -146,17 +157,21 @@ public final class MatcherCorpusHarness {
             CorpusFinding finding = beforeFindings.get(i);
             // Deterministic, collision-free within one case: the fixture's own before-id is unique
             // per case (validate() enforces it) and this harness never compares ids across cases.
-            UUID issueId = UUID.nameUUIDFromBytes(
-                    (corpusCase.id() + "/before/" + finding.id()).getBytes(StandardCharsets.UTF_8));
+            UUID issueId =
+                    UUID.nameUUIDFromBytes(
+                            (corpusCase.id() + "/before/" + finding.id())
+                                    .getBytes(StandardCharsets.UTF_8));
             beforeIdToIssueId.put(finding.id(), issueId);
             issueIdToBeforeId.put(issueId, finding.id());
 
             // §3.3: the SCM rename map is applied to the previous candidate's path before its
             // fingerprint is recomputed for this run, not the other way around - the after side
             // is already scanned at wherever the file lives now.
-            String renamedPath = corpusCase.renames().getOrDefault(finding.filePath(), finding.filePath());
+            String renamedPath =
+                    corpusCase.renames().getOrDefault(finding.filePath(), finding.filePath());
             Fingerprints fingerprints =
-                    FingerprintFactory.compute(finding.ruleId(), renamedPath, finding.symbolPath(), finding.snippet());
+                    FingerprintFactory.compute(
+                            finding.ruleId(), renamedPath, finding.symbolPath(), finding.snippet());
             previous.add(new PreviousIssueCandidate(issueId, i, finding.line(), fingerprints));
         }
 
@@ -166,8 +181,12 @@ public final class MatcherCorpusHarness {
         for (int i = 0; i < afterFindings.size(); i++) {
             CorpusFinding finding = afterFindings.get(i);
             ordinalToAfterId.put(i, finding.id());
-            Fingerprints fingerprints = FingerprintFactory.compute(
-                    finding.ruleId(), finding.filePath(), finding.symbolPath(), finding.snippet());
+            Fingerprints fingerprints =
+                    FingerprintFactory.compute(
+                            finding.ruleId(),
+                            finding.filePath(),
+                            finding.symbolPath(),
+                            finding.snippet());
             current.add(new IncomingFinding(i, finding.line(), fingerprints));
         }
 
@@ -182,12 +201,13 @@ public final class MatcherCorpusHarness {
             List<PreviousIssueCandidate> previous,
             List<IncomingFinding> current,
             Map<UUID, String> issueIdToBeforeId,
-            Map<Integer, String> ordinalToAfterId) {
-    }
+            Map<Integer, String> ordinalToAfterId) {}
 
     /**
-     * @param falseSplitRate {@code falseSplits / totalExpectedMatches}, 0.0 if no matches were expected
-     * @param falseMergeRate {@code falseMerges / totalActualMatches}, 0.0 if the matcher produced nothing
+     * @param falseSplitRate {@code falseSplits / totalExpectedMatches}, 0.0 if no matches were
+     *     expected
+     * @param falseMergeRate {@code falseMerges / totalActualMatches}, 0.0 if the matcher produced
+     *     nothing
      * @param failures one human-readable line per false split/merge, for build-log diagnosis
      */
     public record Report(

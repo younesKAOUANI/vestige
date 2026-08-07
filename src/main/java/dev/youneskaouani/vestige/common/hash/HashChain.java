@@ -12,8 +12,8 @@ import java.util.Map;
  *
  * <p>The outer concatenation is plain string {@code +}, not {@link Sha256#hexOfFields}'s
  * length-prefixed field separation: {@code hexOfFields} exists to keep two <em>variable-length</em>
- * strings from colliding at their boundary (see its own javadoc), but both operands here are
- * always exactly 64 lowercase hex characters - a SHA-256 digest, either {@link #GENESIS_HASH} or a
+ * strings from colliding at their boundary (see its own javadoc), but both operands here are always
+ * exactly 64 lowercase hex characters - a SHA-256 digest, either {@link #GENESIS_HASH} or a
  * previous {@code entry_hash} - so there is no boundary for a collision to hide in.
  */
 public final class HashChain {
@@ -25,8 +25,7 @@ public final class HashChain {
     public static final String GENESIS_HASH =
             "0000000000000000000000000000000000000000000000000000000000000000";
 
-    private HashChain() {
-    }
+    private HashChain() {}
 
     /** Computes the entry hash for a payload following {@code prevHash}. */
     public static String entryHash(String prevHash, Map<String, Object> payload) {

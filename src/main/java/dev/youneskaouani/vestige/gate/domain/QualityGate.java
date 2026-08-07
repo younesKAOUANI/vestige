@@ -8,17 +8,15 @@ import java.time.Instant;
 import java.util.UUID;
 
 /**
- * A project's quality gate configuration (§7): a name, and the ordered
- * {@link QualityGateCondition} rows that belong to it. One gate per project - {@code
- * quality_gate_project_unique} - so {@code PUT /api/v1/projects/{id}/gate} always has exactly one
- * row to update.
+ * A project's quality gate configuration (§7): a name, and the ordered {@link QualityGateCondition}
+ * rows that belong to it. One gate per project - {@code quality_gate_project_unique} - so {@code
+ * PUT /api/v1/projects/{id}/gate} always has exactly one row to update.
  */
 @Entity
 @Table(name = "quality_gate")
 public class QualityGate {
 
-    @Id
-    private UUID id;
+    @Id private UUID id;
 
     @Column(name = "organization_id", nullable = false)
     private UUID organizationId;

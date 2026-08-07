@@ -28,15 +28,19 @@ public class AuditChainVerifier {
         this.eventRepository = eventRepository;
     }
 
-    /** The result named in §6: intact with a length, or broken at the first index that does not chain. */
+    /**
+     * The result named in §6: intact with a length, or broken at the first index that does not
+     * chain.
+     */
     public sealed interface VerificationResult {
 
-        record Intact(long length) implements VerificationResult {
-        }
+        record Intact(long length) implements VerificationResult {}
 
-        /** @param brokenAtIndex 0-based position, in chain order, of the first entry that does not verify */
-        record Broken(long brokenAtIndex) implements VerificationResult {
-        }
+        /**
+         * @param brokenAtIndex 0-based position, in chain order, of the first entry that does not
+         *     verify
+         */
+        record Broken(long brokenAtIndex) implements VerificationResult {}
     }
 
     @Transactional(readOnly = true)

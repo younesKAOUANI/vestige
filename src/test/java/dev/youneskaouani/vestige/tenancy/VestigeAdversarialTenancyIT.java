@@ -27,10 +27,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 /**
  * §5.2's "deliberate adversarial case": a repository method with the tenant filter <em>removed</em>
  * must still return zero foreign rows. {@link IssueRepository#findAll()} is exactly that query -
- * Spring Data generates it with no {@code WHERE} clause at all, tenant or otherwise - which makes it
- * the most honest adversary available: not a hand-written query that merely forgot the predicate,
- * but the one built-in method that structurally cannot have one. If row-level security in Postgres
- * is doing its job, that omission still cannot leak another organisation's rows.
+ * Spring Data generates it with no {@code WHERE} clause at all, tenant or otherwise - which makes
+ * it the most honest adversary available: not a hand-written query that merely forgot the
+ * predicate, but the one built-in method that structurally cannot have one. If row-level security
+ * in Postgres is doing its job, that omission still cannot leak another organisation's rows.
  *
  * <p>Real Postgres, not H2: {@code FORCE ROW LEVEL SECURITY} is what this test exists to prove, and
  * H2 does not implement it - see {@link AbstractIntegrationTest}.
@@ -38,20 +38,15 @@ import org.springframework.beans.factory.annotation.Autowired;
 @Tag("integration")
 class VestigeAdversarialTenancyIT extends AbstractIntegrationTest {
 
-    @Autowired
-    private OrganizationRepository organizationRepository;
+    @Autowired private OrganizationRepository organizationRepository;
 
-    @Autowired
-    private ProjectRepository projectRepository;
+    @Autowired private ProjectRepository projectRepository;
 
-    @Autowired
-    private BranchRepository branchRepository;
+    @Autowired private BranchRepository branchRepository;
 
-    @Autowired
-    private AnalysisRunRepository analysisRunRepository;
+    @Autowired private AnalysisRunRepository analysisRunRepository;
 
-    @Autowired
-    private IssueRepository issueRepository;
+    @Autowired private IssueRepository issueRepository;
 
     @AfterEach
     void clearTenant() {
@@ -59,7 +54,8 @@ class VestigeAdversarialTenancyIT extends AbstractIntegrationTest {
     }
 
     @Test
-    @DisplayName("findAll() - no tenant predicate of its own - still shows only the current tenant's rows")
+    @DisplayName(
+            "findAll() - no tenant predicate of its own - still shows only the current tenant's rows")
     void aQueryWithNoTenantFilterStillSeesOnlyItsOwnTenant() {
         Issue issueA = seedOrganizationWithOneIssue("org-a-" + UUID.randomUUID());
         Issue issueB = seedOrganizationWithOneIssue("org-b-" + UUID.randomUUID());
@@ -97,43 +93,63 @@ class VestigeAdversarialTenancyIT extends AbstractIntegrationTest {
         return issues.stream().map(Issue::getId).toList();
     }
 
-    /** Creates a whole organisation, under its own {@link TenantContext}, with exactly one issue. */
+    /**
+     * Creates a whole organisation, under its own {@link TenantContext}, with exactly one issue.
+     */
     private Issue seedOrganizationWithOneIssue(String slug) {
         UUID organizationId = UUID.randomUUID();
         TenantContext.set(organizationId);
         Instant now = Instant.now();
 
         organizationRepository.save(new Organization(organizationId, slug, slug, now));
-        Project project = projectRepository.save(
-                new Project(UUID.randomUUID(), organizationId, "github", "acme", slug, "main", now));
-        Branch branch = branchRepository.save(
-                new Branch(UUID.randomUUID(), organizationId, project.getId(), "main", true, now));
-        AnalysisRun run = analysisRunRepository.save(new AnalysisRun(
-                UUID.randomUUID(),
-                organizationId,
-                project.getId(),
-                branch.getId(),
-                "abc123",
-                null,
-                "ESLint",
-                "8.0.0",
-                "digest-" + slug,
-                null,
-                now));
+        Project project =
+                projectRepository.save(
+                        new Project(
+                                UUID.randomUUID(),
+                                organizationId,
+                                "github",
+                                "acme",
+                                slug,
+                                "main",
+                                now));
+        Branch branch =
+                branchRepository.save(
+                        new Branch(
+                                UUID.randomUUID(),
+                                organizationId,
+                                project.getId(),
+                                "main",
+                                true,
+                                now));
+        AnalysisRun run =
+                analysisRunRepository.save(
+                        new AnalysisRun(
+                                UUID.randomUUID(),
+                                organizationId,
+                                project.getId(),
+                                branch.getId(),
+                                "abc123",
+                                null,
+                                "ESLint",
+                                "8.0.0",
+                                "digest-" + slug,
+                                null,
+                                now));
 
-        return issueRepository.save(new Issue(
-                UUID.randomUUID(),
-                organizationId,
-                project.getId(),
-                branch.getId(),
-                "java:S1234",
-                Severity.MAJOR,
-                "Do not do that",
-                "src/main/java/Foo.java",
-                null,
-                10,
-                run.getId(),
-                "abc123",
-                now));
+        return issueRepository.save(
+                new Issue(
+                        UUID.randomUUID(),
+                        organizationId,
+                        project.getId(),
+                        branch.getId(),
+                        "java:S1234",
+                        Severity.MAJOR,
+                        "Do not do that",
+                        "src/main/java/Foo.java",
+                        null,
+                        10,
+                        run.getId(),
+                        "abc123",
+                        now));
     }
 }

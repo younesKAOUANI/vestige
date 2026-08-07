@@ -34,7 +34,9 @@ public class IssueController {
     private final TriageService triageService;
 
     public IssueController(
-            IssueQueryService queryService, IssueHistoryService historyService, TriageService triageService) {
+            IssueQueryService queryService,
+            IssueHistoryService historyService,
+            TriageService triageService) {
         this.queryService = queryService;
         this.historyService = historyService;
         this.triageService = triageService;
@@ -49,14 +51,22 @@ public class IssueController {
             @RequestParam(name = "sinceRun", required = false) UUID sinceRun,
             @PageableDefault(size = 50) Pageable pageable) {
         return PageResponse.of(
-                queryService.search(projectId, status, severity, rule, sinceRun, pageable), IssueResponse::of);
+                queryService.search(projectId, status, severity, rule, sinceRun, pageable),
+                IssueResponse::of);
     }
 
     @PatchMapping("/issues/{id}")
-    public IssueResponse triage(@PathVariable UUID id, @Valid @RequestBody TriagePatchRequest request) {
+    public IssueResponse triage(
+            @PathVariable UUID id, @Valid @RequestBody TriagePatchRequest request) {
         UUID organizationId = TenantContext.require();
-        return IssueResponse.of(triageService.applyTriage(
-                organizationId, id, request.status(), request.actor(), request.justification(), Instant.now()));
+        return IssueResponse.of(
+                triageService.applyTriage(
+                        organizationId,
+                        id,
+                        request.status(),
+                        request.actor(),
+                        request.justification(),
+                        Instant.now()));
     }
 
     @GetMapping("/issues/{id}/history")

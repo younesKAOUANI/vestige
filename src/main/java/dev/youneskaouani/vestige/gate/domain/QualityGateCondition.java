@@ -9,16 +9,16 @@ import jakarta.persistence.Table;
 import java.util.UUID;
 
 /**
- * One persisted row of a {@link QualityGate}'s configuration - not to be confused with
- * {@link GateCondition}, the plain value type {@link dev.youneskaouani.vestige.gate.service.QualityGateEvaluator}
- * actually evaluates. This class is storage; {@link #toGateCondition()} is the bridge between them.
+ * One persisted row of a {@link QualityGate}'s configuration - not to be confused with {@link
+ * GateCondition}, the plain value type {@link
+ * dev.youneskaouani.vestige.gate.service.QualityGateEvaluator} actually evaluates. This class is
+ * storage; {@link #toGateCondition()} is the bridge between them.
  */
 @Entity
 @Table(name = "quality_gate_condition")
 public class QualityGateCondition {
 
-    @Id
-    private UUID id;
+    @Id private UUID id;
 
     @Column(name = "organization_id", nullable = false)
     private UUID organizationId;
@@ -33,7 +33,10 @@ public class QualityGateCondition {
     @Column(nullable = false)
     private long threshold;
 
-    /** Display/evaluation order within the gate - stable so a UI list does not reshuffle on every load. */
+    /**
+     * Display/evaluation order within the gate - stable so a UI list does not reshuffle on every
+     * load.
+     */
     @Column(nullable = false)
     private int position;
 
@@ -42,7 +45,12 @@ public class QualityGateCondition {
     }
 
     public QualityGateCondition(
-            UUID id, UUID organizationId, UUID qualityGateId, ConditionType conditionType, long threshold, int position) {
+            UUID id,
+            UUID organizationId,
+            UUID qualityGateId,
+            ConditionType conditionType,
+            long threshold,
+            int position) {
         this.id = id;
         this.organizationId = organizationId;
         this.qualityGateId = qualityGateId;

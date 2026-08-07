@@ -4,7 +4,9 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-/** One finding on either side of a {@link CorpusCase}, exactly as matcher-corpus/*.json spells it. */
+/**
+ * One finding on either side of a {@link CorpusCase}, exactly as matcher-corpus/*.json spells it.
+ */
 @JsonIgnoreProperties(ignoreUnknown = true)
 public record CorpusFinding(
         String id, String ruleId, String filePath, String symbolPath, int line, String snippet) {

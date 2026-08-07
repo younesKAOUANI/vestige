@@ -7,9 +7,9 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * One hand-authored before/after fixture: a real refactor shape, the findings on each side, and
- * the matching a human asserts is correct. See {@code matcher-corpus/generate_cases.py} for how
- * these are produced and {@code matcher-corpus/README.md} for the field-by-field format.
+ * One hand-authored before/after fixture: a real refactor shape, the findings on each side, and the
+ * matching a human asserts is correct. See {@code matcher-corpus/generate_cases.py} for how these
+ * are produced and {@code matcher-corpus/README.md} for the field-by-field format.
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
 public record CorpusCase(
@@ -39,10 +39,14 @@ public record CorpusCase(
         this.expectedMatches = expectedMatches == null ? List.of() : List.copyOf(expectedMatches);
     }
 
-    /** Fails fast on a fixture-authoring mistake: every id an expectation names must actually exist. */
+    /**
+     * Fails fast on a fixture-authoring mistake: every id an expectation names must actually exist.
+     */
     public void validate() {
-        var beforeIds = before.stream().map(CorpusFinding::id).collect(java.util.stream.Collectors.toSet());
-        var afterIds = after.stream().map(CorpusFinding::id).collect(java.util.stream.Collectors.toSet());
+        var beforeIds =
+                before.stream().map(CorpusFinding::id).collect(java.util.stream.Collectors.toSet());
+        var afterIds =
+                after.stream().map(CorpusFinding::id).collect(java.util.stream.Collectors.toSet());
         if (beforeIds.size() != before.size()) {
             throw new IllegalStateException(id + ": duplicate before-finding ids");
         }

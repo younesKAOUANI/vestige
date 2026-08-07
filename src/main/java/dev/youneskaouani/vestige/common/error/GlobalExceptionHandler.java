@@ -29,17 +29,21 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
     @ExceptionHandler(VestigeException.class)
-    public ProblemDetail handleVestigeException(VestigeException exception, HttpServletRequest request) {
-        return problem(exception.status(), exception.problemType(), exception.getMessage(), request);
+    public ProblemDetail handleVestigeException(
+            VestigeException exception, HttpServletRequest request) {
+        return problem(
+                exception.status(), exception.problemType(), exception.getMessage(), request);
     }
 
     @ExceptionHandler(SarifParseException.class)
-    public ProblemDetail handleSarifParseException(SarifParseException exception, HttpServletRequest request) {
+    public ProblemDetail handleSarifParseException(
+            SarifParseException exception, HttpServletRequest request) {
         return problem(HttpStatus.BAD_REQUEST, "invalid-sarif", exception.getMessage(), request);
     }
 
     @ExceptionHandler(IllegalArgumentException.class)
-    public ProblemDetail handleIllegalArgument(IllegalArgumentException exception, HttpServletRequest request) {
+    public ProblemDetail handleIllegalArgument(
+            IllegalArgumentException exception, HttpServletRequest request) {
         return problem(HttpStatus.BAD_REQUEST, "bad-request", exception.getMessage(), request);
     }
 
@@ -61,7 +65,11 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 
     @ExceptionHandler(Exception.class)
     public ProblemDetail handleUnexpected(Exception exception, HttpServletRequest request) {
-        log.error("Unhandled exception on {} {}", request.getMethod(), request.getRequestURI(), exception);
+        log.error(
+                "Unhandled exception on {} {}",
+                request.getMethod(),
+                request.getRequestURI(),
+                exception);
         return problem(
                 HttpStatus.INTERNAL_SERVER_ERROR,
                 "internal-error",
@@ -69,7 +77,8 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
                 request);
     }
 
-    private ProblemDetail problem(HttpStatus status, String type, String detail, HttpServletRequest request) {
+    private ProblemDetail problem(
+            HttpStatus status, String type, String detail, HttpServletRequest request) {
         ProblemDetail problem = ProblemDetail.forStatusAndDetail(status, detail);
         problem.setType(URI.create(Problems.BASE_URI + type));
         problem.setTitle(status.getReasonPhrase());

@@ -30,8 +30,7 @@ public class AnalysisJob {
         DEAD
     }
 
-    @Id
-    private UUID id;
+    @Id private UUID id;
 
     @Column(name = "organization_id", nullable = false)
     private UUID organizationId;

@@ -29,13 +29,14 @@ public enum Severity {
      */
     public static Severity fromSarif(String level, Double securitySeverity) {
         String normalised = level == null ? "warning" : level.toLowerCase(Locale.ROOT);
-        Severity base = switch (normalised) {
-            case "error" -> Severity.CRITICAL;
-            case "warning" -> Severity.MAJOR;
-            case "note" -> Severity.MINOR;
-            case "none" -> Severity.INFO;
-            default -> Severity.MAJOR;
-        };
+        Severity base =
+                switch (normalised) {
+                    case "error" -> Severity.CRITICAL;
+                    case "warning" -> Severity.MAJOR;
+                    case "note" -> Severity.MINOR;
+                    case "none" -> Severity.INFO;
+                    default -> Severity.MAJOR;
+                };
         if (securitySeverity != null && securitySeverity >= 9.0) {
             return Severity.BLOCKER;
         }

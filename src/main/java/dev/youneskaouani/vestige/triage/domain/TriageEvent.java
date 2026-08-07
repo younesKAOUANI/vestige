@@ -32,8 +32,7 @@ import java.util.UUID;
 @Table(name = "triage_event")
 public class TriageEvent {
 
-    @Id
-    private UUID id;
+    @Id private UUID id;
 
     @Column(name = "organization_id", nullable = false)
     private UUID organizationId;
@@ -55,8 +54,7 @@ public class TriageEvent {
     @Column(name = "to_status", nullable = false)
     private IssueStatus toStatus;
 
-    @Column
-    private String justification;
+    @Column private String justification;
 
     @Column(name = "occurred_at", nullable = false)
     private Instant occurredAt;
@@ -105,11 +103,10 @@ public class TriageEvent {
     /**
      * The exact payload {@code entry_hash} is computed over (§6). A {@code Map}, not this entity
      * itself, so {@code TriageEventAppender} (building a not-yet-persisted event) and {@code
-     * AuditChainVerifier} (re-hashing an already-persisted row) are guaranteed to feed
-     * {@link dev.youneskaouani.vestige.common.hash.HashChain} the identical shape - six fields,
-     * matching §6's {@code {issue_id, actor_id, from_status, to_status, justification,
-     * occurred_at}} one for one (renaming {@code actor_id} to {@code actor} - see the class
-     * javadoc).
+     * AuditChainVerifier} (re-hashing an already-persisted row) are guaranteed to feed {@link
+     * dev.youneskaouani.vestige.common.hash.HashChain} the identical shape - six fields, matching
+     * §6's {@code {issue_id, actor_id, from_status, to_status, justification, occurred_at}} one for
+     * one (renaming {@code actor_id} to {@code actor} - see the class javadoc).
      *
      * <p><b>{@code occurredAt} is truncated to microseconds before it is hashed, and that is load
      * bearing.</b> The two callers above see the same instant at different precisions: the appender
@@ -123,7 +120,11 @@ public class TriageEvent {
      * which side of the database it was computed on.
      */
     public static Map<String, Object> canonicalPayload(
-            UUID issueId, String actor, IssueStatus fromStatus, IssueStatus toStatus, String justification,
+            UUID issueId,
+            String actor,
+            IssueStatus fromStatus,
+            IssueStatus toStatus,
+            String justification,
             Instant occurredAt) {
         Map<String, Object> payload = new LinkedHashMap<>();
         payload.put("issueId", issueId.toString());

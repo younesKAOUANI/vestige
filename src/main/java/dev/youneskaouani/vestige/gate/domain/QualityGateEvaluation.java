@@ -12,8 +12,8 @@ import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
 /**
- * The stored result of evaluating a gate against one run (§7) - one row per run
- * ({@code quality_gate_evaluation_once_per_run}), never revised after it is written.
+ * The stored result of evaluating a gate against one run (§7) - one row per run ({@code
+ * quality_gate_evaluation_once_per_run}), never revised after it is written.
  *
  * <p>{@code resultJson} is the full {@code GateOutcome} (gate name, verdict, and every condition's
  * actual value, threshold and offending issue ids), serialised once by the caller and stored as
@@ -26,8 +26,7 @@ import org.hibernate.type.SqlTypes;
 @Table(name = "quality_gate_evaluation")
 public class QualityGateEvaluation {
 
-    @Id
-    private UUID id;
+    @Id private UUID id;
 
     @Column(name = "organization_id", nullable = false)
     private UUID organizationId;

@@ -26,7 +26,8 @@ class SarifReaderTest {
     }
 
     @Test
-    @DisplayName("reads rule id, level, message, location and snippet from a minimal, well-formed result")
+    @DisplayName(
+            "reads rule id, level, message, location and snippet from a minimal, well-formed result")
     void readsACompleteResult() {
         String sarif =
                 """
@@ -81,15 +82,20 @@ class SarifReaderTest {
         assertThat(finding.endColumn()).isEqualTo(10);
         assertThat(finding.lineSnippet()).isEqualTo("let x = 1;");
         assertThat(finding.fingerprints())
-                .isEqualTo(FingerprintFactory.compute(
-                        "no-unused-vars", "src/index.js", "module.exports#run", "let x = 1;"));
+                .isEqualTo(
+                        FingerprintFactory.compute(
+                                "no-unused-vars",
+                                "src/index.js",
+                                "module.exports#run",
+                                "let x = 1;"));
     }
 
     @Test
     @DisplayName("semanticVersion is preferred over version when both are present")
     void prefersSemanticVersion() {
-        String sarif = toolOnlySarif(
-                """
+        String sarif =
+                toolOnlySarif(
+                        """
                 { "driver": { "name": "CodeQL", "version": "2.15.0", "semanticVersion": "2.15.3+build.7" } }
                 """);
 
@@ -135,11 +141,13 @@ class SarifReaderTest {
     }
 
     @Test
-    @DisplayName("a result with neither its own level nor a rule default falls back to Severity.fromSarif's default")
+    @DisplayName(
+            "a result with neither its own level nor a rule default falls back to Severity.fromSarif's default")
     void fallsBackToDefaultSeverityWhenNothingIsReported() {
-        String sarif = singleResultSarif(
-                "\"ruleId\": \"R1\", \"locations\": [ { \"physicalLocation\": "
-                        + "{ \"artifactLocation\": { \"uri\": \"A.java\" } } } ]");
+        String sarif =
+                singleResultSarif(
+                        "\"ruleId\": \"R1\", \"locations\": [ { \"physicalLocation\": "
+                                + "{ \"artifactLocation\": { \"uri\": \"A.java\" } } } ]");
 
         AnalysisReport report = reader.read(bytes(sarif));
 
@@ -185,9 +193,10 @@ class SarifReaderTest {
     @Test
     @DisplayName("a region-less result defaults to line 1, and endLine defaults to startLine")
     void defaultsLineNumbersWhenRegionIsAbsent() {
-        String sarif = singleResultSarif(
-                "\"ruleId\": \"R1\", \"locations\": [ { \"physicalLocation\": "
-                        + "{ \"artifactLocation\": { \"uri\": \"A.java\" } } } ]");
+        String sarif =
+                singleResultSarif(
+                        "\"ruleId\": \"R1\", \"locations\": [ { \"physicalLocation\": "
+                                + "{ \"artifactLocation\": { \"uri\": \"A.java\" } } } ]");
 
         RawFinding finding = reader.read(bytes(sarif)).findings().get(0);
 
@@ -198,11 +207,13 @@ class SarifReaderTest {
     }
 
     @Test
-    @DisplayName("a result with no rule id at all is dropped, not turned into an untraceable finding")
+    @DisplayName(
+            "a result with no rule id at all is dropped, not turned into an untraceable finding")
     void dropsResultsWithoutARuleId() {
-        String sarif = singleResultSarif(
-                "\"message\": { \"text\": \"m\" }, \"locations\": [ { \"physicalLocation\": "
-                        + "{ \"artifactLocation\": { \"uri\": \"A.java\" } } } ]");
+        String sarif =
+                singleResultSarif(
+                        "\"message\": { \"text\": \"m\" }, \"locations\": [ { \"physicalLocation\": "
+                                + "{ \"artifactLocation\": { \"uri\": \"A.java\" } } } ]");
 
         AnalysisReport report = reader.read(bytes(sarif));
 
@@ -220,7 +231,8 @@ class SarifReaderTest {
     }
 
     @Test
-    @DisplayName("an index-based artifact location resolves against run.artifacts, and file: URIs are decoded")
+    @DisplayName(
+            "an index-based artifact location resolves against run.artifacts, and file: URIs are decoded")
     void resolvesArtifactIndexAndDecodesFileUris() {
         String sarif =
                 """
@@ -250,7 +262,8 @@ class SarifReaderTest {
     }
 
     @Test
-    @DisplayName("artifacts declared AFTER results in the document still resolve correctly, in the original order")
+    @DisplayName(
+            "artifacts declared AFTER results in the document still resolve correctly, in the original order")
     void resolvesWhenArtifactsFollowResultsInDocumentOrder() {
         String sarif =
                 """
@@ -294,11 +307,13 @@ class SarifReaderTest {
     }
 
     @Test
-    @DisplayName("a security-severity of 9.0 or above elevates the finding to BLOCKER regardless of level")
+    @DisplayName(
+            "a security-severity of 9.0 or above elevates the finding to BLOCKER regardless of level")
     void securitySeverityElevatesToBlocker() {
-        String sarif = singleResultSarif(
-                "\"ruleId\": \"R1\", \"level\": \"warning\", \"properties\": { \"security-severity\": \"9.8\" }, "
-                        + "\"locations\": [ { \"physicalLocation\": { \"artifactLocation\": { \"uri\": \"A.java\" } } } ]");
+        String sarif =
+                singleResultSarif(
+                        "\"ruleId\": \"R1\", \"level\": \"warning\", \"properties\": { \"security-severity\": \"9.8\" }, "
+                                + "\"locations\": [ { \"physicalLocation\": { \"artifactLocation\": { \"uri\": \"A.java\" } } } ]");
 
         RawFinding finding = reader.read(bytes(sarif)).findings().get(0);
 
@@ -331,12 +346,14 @@ class SarifReaderTest {
         RawFinding finding = reader.read(bytes(sarif)).findings().get(0);
 
         assertThat(finding.filePath())
-                .as("index 99 does not resolve against an empty artifacts list, so the next location is used")
+                .as(
+                        "index 99 does not resolve against an empty artifacts list, so the next location is used")
                 .isEqualTo("Second.java");
     }
 
     @Test
-    @DisplayName("findings are delivered to the batch consumer in order and in batches of the given size")
+    @DisplayName(
+            "findings are delivered to the batch consumer in order and in batches of the given size")
     void deliversBatchesInOrder() {
         StringBuilder results = new StringBuilder();
         for (int i = 0; i < 5; i++) {
@@ -350,10 +367,11 @@ class SarifReaderTest {
                     """
                             .formatted(i, i));
         }
-        String sarif = """
+        String sarif =
+                """
                 { "runs": [ { "tool": { "driver": { "name": "Analyser" } }, "results": [ %s ] } ] }
                 """
-                .formatted(results);
+                        .formatted(results);
 
         List<List<RawFinding>> batches = new ArrayList<>();
         AnalysisReport report = reader.read(bytes(sarif), 2, batches::add);
@@ -437,14 +455,18 @@ class SarifReaderTest {
     @Test
     @DisplayName("peekToolIdentity rejects a run with no tool name, same as a full read would")
     void peekToolIdentityRejectsAMissingToolName() {
-        assertThatThrownBy(() -> reader.peekToolIdentity(bytes("{ \"runs\": [ { \"results\": [] } ] }")))
+        assertThatThrownBy(
+                        () ->
+                                reader.peekToolIdentity(
+                                        bytes("{ \"runs\": [ { \"results\": [] } ] }")))
                 .isInstanceOf(SarifParseException.class);
     }
 
     @Test
     @DisplayName("peekToolIdentity rejects an empty payload and a document with no runs")
     void peekToolIdentityRejectsEmptyAndNoRuns() {
-        assertThatThrownBy(() -> reader.peekToolIdentity(new byte[0])).isInstanceOf(SarifParseException.class);
+        assertThatThrownBy(() -> reader.peekToolIdentity(new byte[0]))
+                .isInstanceOf(SarifParseException.class);
         assertThatThrownBy(() -> reader.peekToolIdentity(bytes("{ \"runs\": [] }")))
                 .isInstanceOf(SarifParseException.class);
     }

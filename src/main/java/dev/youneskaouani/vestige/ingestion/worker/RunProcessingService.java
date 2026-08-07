@@ -74,44 +74,72 @@ public class RunProcessingService {
 
     @Transactional
     public void process(UUID runId, Instant now) {
-        AnalysisRun run = runRepository
-                .findById(runId)
-                .orElseThrow(() -> new IllegalStateException("Run " + runId + " was claimed but is now missing"));
-        byte[] sarif = payloadRepository
-                .findById(runId)
-                .orElseThrow(() -> new IllegalStateException("Run " + runId + " has no stored report payload"))
-                .getSarif();
+        AnalysisRun run =
+                runRepository
+                        .findById(runId)
+                        .orElseThrow(
+                                () ->
+                                        new IllegalStateException(
+                                                "Run "
+                                                        + runId
+                                                        + " was claimed but is now missing"));
+        byte[] sarif =
+                payloadRepository
+                        .findById(runId)
+                        .orElseThrow(
+                                () ->
+                                        new IllegalStateException(
+                                                "Run " + runId + " has no stored report payload"))
+                        .getSarif();
 
         run.markParsing(now);
 
         List<Finding> persisted = new ArrayList<>();
-        AnalysisReport report = sarifReader.read(sarif, properties.ingestion().findingBatchSize(), batch -> {
-            List<Finding> entities = batch.stream().map(raw -> toEntity(run, raw, now)).toList();
-            findingRepository.saveAll(entities);
-            persisted.addAll(entities);
-        });
+        AnalysisReport report =
+                sarifReader.read(
+                        sarif,
+                        properties.ingestion().findingBatchSize(),
+                        batch -> {
+                            List<Finding> entities =
+                                    batch.stream().map(raw -> toEntity(run, raw, now)).toList();
+                            findingRepository.saveAll(entities);
+                            persisted.addAll(entities);
+                        });
         run.describeAnalyser(report.analyserName(), report.analyserVersion(), now);
 
         run.markMatching(now);
-        Project project = projectRepository
-                .findById(run.getProjectId())
-                .orElseThrow(() -> new IllegalStateException("Run " + runId + " has no project " + run.getProjectId()));
+        Project project =
+                projectRepository
+                        .findById(run.getProjectId())
+                        .orElseThrow(
+                                () ->
+                                        new IllegalStateException(
+                                                "Run "
+                                                        + runId
+                                                        + " has no project "
+                                                        + run.getProjectId()));
 
-        TrackingResult tracking = issueTrackingService.track(
-                run.getOrganizationId(),
-                run.getProjectId(),
-                run.getBranchId(),
-                run.getId(),
-                run.getCommitSha(),
-                run.getBaseCommitSha(),
-                project.getProvider(),
-                project.getOwner(),
-                project.getName(),
-                persisted,
-                now);
+        TrackingResult tracking =
+                issueTrackingService.track(
+                        run.getOrganizationId(),
+                        run.getProjectId(),
+                        run.getBranchId(),
+                        run.getId(),
+                        run.getCommitSha(),
+                        run.getBaseCommitSha(),
+                        project.getProvider(),
+                        project.getOwner(),
+                        project.getName(),
+                        persisted,
+                        now);
 
-        GateOutcome gateOutcome = gateEvaluationService.evaluate(
-                run.getOrganizationId(), run.getProjectId(), run.getId(), tracking.gateIssues(), now);
+        GateOutcome gateOutcome =
+                gateEvaluationService.evaluate(
+                        run.getOrganizationId(),
+                        run.getProjectId(),
+                        run.getId(),
+                        tracking.gateIssues(),
+                        now);
 
         run.markCompleted(persisted.size(), now);
 
@@ -146,9 +174,17 @@ public class RunProcessingService {
      */
     private void publishCheckRun(Project project, AnalysisRun run, GateOutcome outcome) {
         try {
-            checkRunPublisher.publish(project.getProvider(), project.getOwner(), project.getName(), run.getCommitSha(), outcome);
+            checkRunPublisher.publish(
+                    project.getProvider(),
+                    project.getOwner(),
+                    project.getName(),
+                    run.getCommitSha(),
+                    outcome);
         } catch (RuntimeException e) {
-            log.warn("Failed to publish check run for run {} - the run itself is still COMPLETE", run.getId(), e);
+            log.warn(
+                    "Failed to publish check run for run {} - the run itself is still COMPLETE",
+                    run.getId(),
+                    e);
         }
     }
 }

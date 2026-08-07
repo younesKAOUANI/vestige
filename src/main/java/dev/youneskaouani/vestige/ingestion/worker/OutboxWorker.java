@@ -18,9 +18,9 @@ import org.springframework.stereotype.Component;
  * crash recoverable instead of silently losing the job.
  *
  * <p>{@code @Scheduled(fixedDelay = ...)} rather than {@code fixedRate}: the next poll is timed
- * from when the previous one <em>finished</em>, so a slow run (a large SARIF report) does not
- * cause polls to pile up behind it. Spring's default {@code TaskScheduler} runs one thread; running
- * more workers is a matter of raising {@code spring.task.scheduling.pool.size} or deploying more
+ * from when the previous one <em>finished</em>, so a slow run (a large SARIF report) does not cause
+ * polls to pile up behind it. Spring's default {@code TaskScheduler} runs one thread; running more
+ * workers is a matter of raising {@code spring.task.scheduling.pool.size} or deploying more
  * instances, and {@code FOR UPDATE SKIP LOCKED} (§4.2) is exactly what makes either safe without
  * any coordination between them - a property this single-threaded default does not exercise, but
  * does not preclude either.
@@ -34,7 +34,10 @@ public class OutboxWorker {
     private final JobOutcomeService outcomeService;
     private final RunProcessingService processingService;
 
-    public OutboxWorker(JobLeaseService leaseService, JobOutcomeService outcomeService, RunProcessingService processingService) {
+    public OutboxWorker(
+            JobLeaseService leaseService,
+            JobOutcomeService outcomeService,
+            RunProcessingService processingService) {
         this.leaseService = leaseService;
         this.outcomeService = outcomeService;
         this.processingService = processingService;
@@ -62,16 +65,24 @@ public class OutboxWorker {
                     job.jobId(),
                     e);
             outcomeService.recordFailure(
-                    job.jobId(), job.organizationId(), job.analysisRunId(), job.attemptCount(), describe(e), Instant.now());
+                    job.jobId(),
+                    job.organizationId(),
+                    job.analysisRunId(),
+                    job.attemptCount(),
+                    describe(e),
+                    Instant.now());
         } finally {
             TenantContext.clear();
         }
     }
 
-    /** A message worth reading in the UI (§4.2: "surfaced in the UI with the captured stack trace"). */
+    /**
+     * A message worth reading in the UI (§4.2: "surfaced in the UI with the captured stack trace").
+     */
     private static String describe(Exception e) {
         String message = e.getMessage();
-        String detail = (message == null || message.isBlank()) ? e.getClass().getSimpleName() : message;
+        String detail =
+                (message == null || message.isBlank()) ? e.getClass().getSimpleName() : message;
         return e.getClass().getSimpleName() + ": " + detail;
     }
 }

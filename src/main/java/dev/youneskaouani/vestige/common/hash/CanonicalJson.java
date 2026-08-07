@@ -27,12 +27,11 @@ import java.util.Map;
  */
 public final class CanonicalJson {
 
-    private CanonicalJson() {
-    }
+    private CanonicalJson() {}
 
     /**
-     * Serialises a JSON value built from {@link Map}, {@link Collection}, {@link String},
-     * {@link Boolean}, exact numbers and {@code null}.
+     * Serialises a JSON value built from {@link Map}, {@link Collection}, {@link String}, {@link
+     * Boolean}, exact numbers and {@code null}.
      *
      * @throws IllegalArgumentException if the value contains an unsupported type
      */
@@ -82,7 +81,8 @@ public final class CanonicalJson {
         List<String> keys = new ArrayList<>(map.size());
         for (Object key : map.keySet()) {
             if (!(key instanceof String s)) {
-                throw new IllegalArgumentException("Canonical JSON object keys must be strings, got: " + key);
+                throw new IllegalArgumentException(
+                        "Canonical JSON object keys must be strings, got: " + key);
             }
             keys.add(s);
         }

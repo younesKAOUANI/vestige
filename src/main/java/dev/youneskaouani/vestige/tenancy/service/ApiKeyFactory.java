@@ -18,28 +18,27 @@ public final class ApiKeyFactory {
     /** 32 bytes of CSPRNG output; this is the part that must never be stored. */
     private static final int SECRET_BYTES = 32;
 
-    private ApiKeyFactory() {
-    }
+    private ApiKeyFactory() {}
 
     /**
      * A newly minted key and the row that records it.
      *
      * @param plaintext shown to the user exactly once; never persisted
      */
-    public record NewApiKey(ApiKey record, String plaintext) {
-    }
+    public record NewApiKey(ApiKey record, String plaintext) {}
 
     public static NewApiKey create(UUID organizationId, String name, Instant now) {
         String prefix = randomSegment(PREFIX_BYTES);
         String secret = randomSegment(SECRET_BYTES);
         String plaintext = ApiKeyAuthenticator.KEY_NAMESPACE + "_" + prefix + "_" + secret;
-        ApiKey record = new ApiKey(
-                UUID.randomUUID(),
-                organizationId,
-                name,
-                prefix,
-                ApiKeyAuthenticator.hash(plaintext),
-                now);
+        ApiKey record =
+                new ApiKey(
+                        UUID.randomUUID(),
+                        organizationId,
+                        name,
+                        prefix,
+                        ApiKeyAuthenticator.hash(plaintext),
+                        now);
         return new NewApiKey(record, plaintext);
     }
 

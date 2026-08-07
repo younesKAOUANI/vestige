@@ -17,12 +17,11 @@ import org.springframework.transaction.annotation.Transactional;
  * transaction rolls back, the failure still has to be durably recorded - a job whose only trace of
  * failing is a log line is a job that silently retries forever, or silently never does.
  *
- * <p>Runs under the job's real {@link dev.youneskaouani.vestige.tenancy.web.TenantContext}
- * (set by {@link OutboxWorker} once {@link JobLeaseService} has revealed which organisation the
- * job belongs to), not the worker escalation {@link JobLeaseService} used to find it - {@code
- * analysis_job}'s row-level security policy accepts a matching tenant just as well as the
- * escalation flag (V2 migration), and {@code analysis_run}/{@code poison_report} only ever accept
- * the tenant match.
+ * <p>Runs under the job's real {@link dev.youneskaouani.vestige.tenancy.web.TenantContext} (set by
+ * {@link OutboxWorker} once {@link JobLeaseService} has revealed which organisation the job belongs
+ * to), not the worker escalation {@link JobLeaseService} used to find it - {@code analysis_job}'s
+ * row-level security policy accepts a matching tenant just as well as the escalation flag (V2
+ * migration), and {@code analysis_run}/{@code poison_report} only ever accept the tenant match.
  */
 @Service
 public class JobOutcomeService {
@@ -55,11 +54,25 @@ public class JobOutcomeService {
      * PoisonReport} of why - never silently drop a report that could not be processed.
      */
     @Transactional
-    public void recordFailure(UUID jobId, UUID organizationId, UUID analysisRunId, int attemptCount, String error, Instant now) {
+    public void recordFailure(
+            UUID jobId,
+            UUID organizationId,
+            UUID analysisRunId,
+            int attemptCount,
+            String error,
+            Instant now) {
         AnalysisJob job = requireJob(jobId);
-        AnalysisRun run = runRepository
-                .findById(analysisRunId)
-                .orElseThrow(() -> new IllegalStateException("Run " + analysisRunId + " for job " + jobId + " is missing"));
+        AnalysisRun run =
+                runRepository
+                        .findById(analysisRunId)
+                        .orElseThrow(
+                                () ->
+                                        new IllegalStateException(
+                                                "Run "
+                                                        + analysisRunId
+                                                        + " for job "
+                                                        + jobId
+                                                        + " is missing"));
 
         run.markFailed(error, now);
         if (retryPolicy.shouldRetry(attemptCount)) {
@@ -70,12 +83,21 @@ public class JobOutcomeService {
         job.die(error, now);
         run.markQuarantined(error, now);
         poisonReportRepository.save(
-                new PoisonReport(UUID.randomUUID(), organizationId, analysisRunId, attemptCount, error, now));
+                new PoisonReport(
+                        UUID.randomUUID(),
+                        organizationId,
+                        analysisRunId,
+                        attemptCount,
+                        error,
+                        now));
     }
 
     private AnalysisJob requireJob(UUID jobId) {
         return jobRepository
                 .findById(jobId)
-                .orElseThrow(() -> new IllegalStateException("Job " + jobId + " was claimed but is now missing"));
+                .orElseThrow(
+                        () ->
+                                new IllegalStateException(
+                                        "Job " + jobId + " was claimed but is now missing"));
     }
 }

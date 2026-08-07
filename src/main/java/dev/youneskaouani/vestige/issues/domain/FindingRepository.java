@@ -16,6 +16,9 @@ public interface FindingRepository extends JpaRepository<Finding, UUID> {
      */
     Optional<Finding> findByIssueIdAndAnalysisRunId(UUID issueId, UUID analysisRunId);
 
-    /** Full finding history of one issue, oldest first - {@code GET /api/v1/issues/{id}/history} (§8). */
+    /**
+     * Full finding history of one issue, oldest first - {@code GET /api/v1/issues/{id}/history}
+     * (§8).
+     */
     List<Finding> findAllByIssueIdOrderBySeq(UUID issueId);
 }

@@ -13,8 +13,8 @@ public interface AnalysisJobRepository extends JpaRepository<AnalysisJob, UUID> 
     /**
      * Claims the next runnable job for this worker.
      *
-     * <p>{@code FOR UPDATE SKIP LOCKED} is what makes several workers safe without a coordinator:
-     * a row another worker is already holding is stepped over rather than waited on, so throughput
+     * <p>{@code FOR UPDATE SKIP LOCKED} is what makes several workers safe without a coordinator: a
+     * row another worker is already holding is stepped over rather than waited on, so throughput
      * scales with the number of workers instead of serialising on the head of the queue.
      *
      * <p>A row whose lease has expired is claimable again, which is how a worker that was killed

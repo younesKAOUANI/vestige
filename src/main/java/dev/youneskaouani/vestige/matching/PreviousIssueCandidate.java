@@ -16,5 +16,5 @@ import java.util.UUID;
  * @param fingerprints computed by {@link FingerprintFactory} <em>after</em> the commit's rename map
  *     has been applied to this candidate's file path
  */
-public record PreviousIssueCandidate(UUID issueId, long tieBreakSeq, int line, Fingerprints fingerprints) {
-}
+public record PreviousIssueCandidate(
+        UUID issueId, long tieBreakSeq, int line, Fingerprints fingerprints) {}

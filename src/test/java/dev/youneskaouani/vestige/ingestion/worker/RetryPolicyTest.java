@@ -29,10 +29,14 @@ class RetryPolicyTest {
         // jitter fixed at 1 - epsilon isolates the exponential term from the multiplication.
         RetryPolicy policy = fixedJitter(0.999999);
 
-        assertThat(policy.delayFor(1).toMillis()).isCloseTo(250, org.assertj.core.data.Offset.offset(1L));
-        assertThat(policy.delayFor(2).toMillis()).isCloseTo(500, org.assertj.core.data.Offset.offset(1L));
-        assertThat(policy.delayFor(3).toMillis()).isCloseTo(1000, org.assertj.core.data.Offset.offset(1L));
-        assertThat(policy.delayFor(4).toMillis()).isCloseTo(2000, org.assertj.core.data.Offset.offset(2L));
+        assertThat(policy.delayFor(1).toMillis())
+                .isCloseTo(250, org.assertj.core.data.Offset.offset(1L));
+        assertThat(policy.delayFor(2).toMillis())
+                .isCloseTo(500, org.assertj.core.data.Offset.offset(1L));
+        assertThat(policy.delayFor(3).toMillis())
+                .isCloseTo(1000, org.assertj.core.data.Offset.offset(1L));
+        assertThat(policy.delayFor(4).toMillis())
+                .isCloseTo(2000, org.assertj.core.data.Offset.offset(2L));
     }
 
     @Test
@@ -40,8 +44,10 @@ class RetryPolicyTest {
     void neverExceedsTheCap() {
         RetryPolicy policy = fixedJitter(0.999999);
 
-        assertThat(policy.delayFor(10).toMillis()).isLessThanOrEqualTo(Duration.ofMinutes(5).toMillis());
-        assertThat(policy.delayFor(1000).toMillis()).isLessThanOrEqualTo(Duration.ofMinutes(5).toMillis());
+        assertThat(policy.delayFor(10).toMillis())
+                .isLessThanOrEqualTo(Duration.ofMinutes(5).toMillis());
+        assertThat(policy.delayFor(1000).toMillis())
+                .isLessThanOrEqualTo(Duration.ofMinutes(5).toMillis());
     }
 
     @Test
@@ -62,8 +68,10 @@ class RetryPolicyTest {
     @Test
     @DisplayName("rejects a jitter source that strays outside [0, 1)")
     void rejectsAnOutOfRangeJitterSource() {
-        assertThatThrownBy(() -> fixedJitter(1.0).delayFor(1)).isInstanceOf(IllegalStateException.class);
-        assertThatThrownBy(() -> fixedJitter(-0.1).delayFor(1)).isInstanceOf(IllegalStateException.class);
+        assertThatThrownBy(() -> fixedJitter(1.0).delayFor(1))
+                .isInstanceOf(IllegalStateException.class);
+        assertThatThrownBy(() -> fixedJitter(-0.1).delayFor(1))
+                .isInstanceOf(IllegalStateException.class);
     }
 
     @Test

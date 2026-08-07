@@ -16,8 +16,8 @@ import org.junit.jupiter.api.Test;
  * the production {@link dev.youneskaouani.vestige.matching.IssueMatcher}, and enforces the
  * project's stated acceptance thresholds - <b>zero</b> tolerance for false merges (silently
  * conflating two different issues is worse than any inconvenience a split causes), and at most 5%
- * false splits (losing an issue's history occasionally is a real cost, not a free one, which is
- * why the bar is 5% and not 100%).
+ * false splits (losing an issue's history occasionally is a real cost, not a free one, which is why
+ * the bar is 5% and not 100%).
  *
  * <p>A failure here means the algorithm regressed against a concrete, named refactor shape - the
  * failure list in the assertion message says exactly which fixture and which pairing.
@@ -38,7 +38,9 @@ class MatcherCorpusHarnessTest {
         List<CorpusCase> cases = harness.loadCases(directory);
 
         assertThat(cases.size())
-                .as("matcher-corpus/cases must contain at least %d hand-authored fixtures", MINIMUM_CASE_COUNT)
+                .as(
+                        "matcher-corpus/cases must contain at least %d hand-authored fixtures",
+                        MINIMUM_CASE_COUNT)
                 .isGreaterThanOrEqualTo(MINIMUM_CASE_COUNT);
 
         MatcherCorpusHarness.Report report = harness.evaluate(cases);
@@ -46,11 +48,13 @@ class MatcherCorpusHarnessTest {
         report.failures().forEach(System.out::println);
 
         assertThat(report.falseMergeRate())
-                .as("false merges silently conflate two different issues - zero tolerance.\n%s\n%s",
+                .as(
+                        "false merges silently conflate two different issues - zero tolerance.\n%s\n%s",
                         report.summary(), String.join("\n", report.failures()))
                 .isZero();
         assertThat(report.falseSplitRate())
-                .as("false splits lose an issue's tracked history across the refactor.\n%s\n%s",
+                .as(
+                        "false splits lose an issue's tracked history across the refactor.\n%s\n%s",
                         report.summary(), String.join("\n", report.failures()))
                 .isLessThanOrEqualTo(MAX_FALSE_SPLIT_RATE);
     }

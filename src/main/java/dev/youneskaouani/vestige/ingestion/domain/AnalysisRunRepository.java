@@ -16,5 +16,6 @@ public interface AnalysisRunRepository extends JpaRepository<AnalysisRun, UUID> 
     Optional<AnalysisRun> findByProjectIdAndCommitShaAndAnalyserNameAndReportDigest(
             UUID projectId, String commitSha, String analyserName, String reportDigest);
 
-    Optional<AnalysisRun> findByOrganizationIdAndIdempotencyKey(UUID organizationId, String idempotencyKey);
+    Optional<AnalysisRun> findByOrganizationIdAndIdempotencyKey(
+            UUID organizationId, String idempotencyKey);
 }

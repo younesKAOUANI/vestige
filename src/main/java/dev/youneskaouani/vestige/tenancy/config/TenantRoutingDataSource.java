@@ -11,28 +11,27 @@ import javax.sql.DataSource;
 import org.springframework.jdbc.datasource.lookup.AbstractRoutingDataSource;
 
 /**
- * Publishes the current tenant into the database session at the moment a connection is handed to
- * a transaction, which is what the row-level security policies in V2 read (§5.2).
+ * Publishes the current tenant into the database session at the moment a connection is handed to a
+ * transaction, which is what the row-level security policies in V2 read (§5.2).
  *
  * <p><b>Why {@link AbstractRoutingDataSource} for a single physical database.</b> Its usual job is
- * choosing between several target data sources; v1 has exactly one, so
- * {@link #determineCurrentLookupKey()} always resolves to the same key and the "routing" is
- * degenerate on purpose. It is still the right base class, because the property that actually
- * matters here is a different one: it is the one standard Spring hook that runs on every
- * connection checkout, before anything else touches that connection. An AOP aspect around
- * {@code @Transactional} was the obvious alternative and does not work cleanly - Spring's
- * transaction advisor sits at {@code LOWEST_PRECEDENCE}, so an ordinary aspect runs
- * <em>outside</em> the transaction it is trying to configure, and connections are frequently
- * acquired lazily, on the first statement, not at {@code doBegin}. Overriding
- * {@link #getConnection()} sidesteps both problems: whatever acquires the JDBC connection - JPA's
- * lazy acquisition, plain JDBC, a health check - gets the tenant set first. If Vestige grows a
- * second physical database (a read replica, a per-region shard), the target map here is exactly
- * where that would plug in, which is the other reason this is the right class rather than a
- * decorator invented for this one purpose.
+ * choosing between several target data sources; v1 has exactly one, so {@link
+ * #determineCurrentLookupKey()} always resolves to the same key and the "routing" is degenerate on
+ * purpose. It is still the right base class, because the property that actually matters here is a
+ * different one: it is the one standard Spring hook that runs on every connection checkout, before
+ * anything else touches that connection. An AOP aspect around {@code @Transactional} was the
+ * obvious alternative and does not work cleanly - Spring's transaction advisor sits at {@code
+ * LOWEST_PRECEDENCE}, so an ordinary aspect runs <em>outside</em> the transaction it is trying to
+ * configure, and connections are frequently acquired lazily, on the first statement, not at {@code
+ * doBegin}. Overriding {@link #getConnection()} sidesteps both problems: whatever acquires the JDBC
+ * connection - JPA's lazy acquisition, plain JDBC, a health check - gets the tenant set first. If
+ * Vestige grows a second physical database (a read replica, a per-region shard), the target map
+ * here is exactly where that would plug in, which is the other reason this is the right class
+ * rather than a decorator invented for this one purpose.
  *
- * <p><b>{@code set_config} rather than {@code SET}.</b> PostgreSQL's {@code SET} does not take
- * bind parameters, and building the statement by string concatenation around a value that arrives
- * with the request is how one writes an injection.
+ * <p><b>{@code set_config} rather than {@code SET}.</b> PostgreSQL's {@code SET} does not take bind
+ * parameters, and building the statement by string concatenation around a value that arrives with
+ * the request is how one writes an injection.
  *
  * <p><b>Why the setting is session-scoped rather than transaction-local.</b> The obvious choice is
  * {@code set_config(..., true)} - {@code LOCAL} in effect, scoped to the surrounding transaction -
@@ -56,8 +55,8 @@ import org.springframework.jdbc.datasource.lookup.AbstractRoutingDataSource;
  *
  * <p>Rollback is not a hole either. The publish happens in autocommit, so it commits on its own
  * before the application's transaction starts; if that transaction later rolls back, PostgreSQL
- * reverts the session variable to the value it had beforehand - the one just published - and not
- * to some earlier tenant's.
+ * reverts the session variable to the value it had beforehand - the one just published - and not to
+ * some earlier tenant's.
  */
 public final class TenantRoutingDataSource extends AbstractRoutingDataSource {
 

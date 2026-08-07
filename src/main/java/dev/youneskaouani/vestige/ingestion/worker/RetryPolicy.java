@@ -10,10 +10,10 @@ import java.util.function.DoubleSupplier;
  *
  * <pre>{@code delay = min(2^n * baseDelay, maxDelay) * U(0, 1)}</pre>
  *
- * <p>"Full" jitter - multiplying the whole capped delay by a fresh {@code U(0,1)} draw, rather
- * than adding a smaller random offset on top of it - is deliberate and is the AWS Architecture
- * Blog's own recommendation for this exact problem. A database blip that fails fifty jobs in the
- * same instant must not have them all retry in the same instant too; that is how a system that is
+ * <p>"Full" jitter - multiplying the whole capped delay by a fresh {@code U(0,1)} draw, rather than
+ * adding a smaller random offset on top of it - is deliberate and is the AWS Architecture Blog's
+ * own recommendation for this exact problem. A database blip that fails fifty jobs in the same
+ * instant must not have them all retry in the same instant too; that is how a system that is
  * already recovering gets knocked over a second time. Multiplying by {@code U(0,1)} spreads the
  * fiftieth retry anywhere between 0 and the full capped delay, which is a much wider spread than
  * adding a small jitter term to an otherwise-fixed delay would give.
@@ -28,7 +28,8 @@ import java.util.function.DoubleSupplier;
  * @param maxDelay ceiling for the delay, before jitter
  * @param maxAttempts attempts after which a job is declared dead and quarantined (§4.2)
  */
-public record RetryPolicy(Duration baseDelay, Duration maxDelay, int maxAttempts, DoubleSupplier jitterSource) {
+public record RetryPolicy(
+        Duration baseDelay, Duration maxDelay, int maxAttempts, DoubleSupplier jitterSource) {
 
     public RetryPolicy {
         if (baseDelay.isNegative() || baseDelay.isZero()) {
@@ -52,7 +53,8 @@ public record RetryPolicy(Duration baseDelay, Duration maxDelay, int maxAttempts
     }
 
     public static RetryPolicy of(Duration baseDelay, Duration maxDelay, int maxAttempts) {
-        return new RetryPolicy(baseDelay, maxDelay, maxAttempts, () -> ThreadLocalRandom.current().nextDouble());
+        return new RetryPolicy(
+                baseDelay, maxDelay, maxAttempts, () -> ThreadLocalRandom.current().nextDouble());
     }
 
     /** A copy of this policy whose jitter is deterministic - for tests that need an exact delay. */
@@ -80,7 +82,8 @@ public record RetryPolicy(Duration baseDelay, Duration maxDelay, int maxAttempts
 
         double jitter = jitterSource.getAsDouble();
         if (jitter < 0.0 || jitter >= 1.0) {
-            throw new IllegalStateException("jitterSource must return a value in [0, 1), got " + jitter);
+            throw new IllegalStateException(
+                    "jitterSource must return a value in [0, 1), got " + jitter);
         }
         return Duration.ofMillis(Math.round(capped * jitter));
     }

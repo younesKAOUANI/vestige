@@ -20,8 +20,7 @@ public final class TenantContext {
 
     private static final ThreadLocal<UUID> CURRENT = new ThreadLocal<>();
 
-    private TenantContext() {
-    }
+    private TenantContext() {}
 
     public static void set(UUID organizationId) {
         CURRENT.set(organizationId);
@@ -38,6 +37,9 @@ public final class TenantContext {
     /** The current tenant, or a 401 if there is none. */
     public static UUID require() {
         return current()
-                .orElseThrow(() -> new Problems.Unauthorized("No authenticated organization on this request"));
+                .orElseThrow(
+                        () ->
+                                new Problems.Unauthorized(
+                                        "No authenticated organization on this request"));
     }
 }

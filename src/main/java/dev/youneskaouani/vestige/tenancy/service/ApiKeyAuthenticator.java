@@ -36,8 +36,7 @@ public class ApiKeyAuthenticator {
     /** Everything before this many characters of the secret segment is the lookup handle. */
     public static final String KEY_NAMESPACE = "vst";
 
-    @PersistenceContext
-    private EntityManager entityManager;
+    @PersistenceContext private EntityManager entityManager;
 
     /**
      * @param presentedKey the raw value of the {@code X-API-Key} header

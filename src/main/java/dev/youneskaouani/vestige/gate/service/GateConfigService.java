@@ -53,29 +53,45 @@ public class GateConfigService {
             UUID organizationId, UUID projectId, QualityGateDefinition requested, Instant now) {
         requireProject(projectId);
 
-        QualityGate gate = gateRepository
-                .findByProjectId(projectId)
-                .map(existing -> {
-                    existing.rename(requested.name(), now);
-                    return existing;
-                })
-                .orElseGet(() -> gateRepository.save(
-                        new QualityGate(UUID.randomUUID(), organizationId, projectId, requested.name(), now)));
+        QualityGate gate =
+                gateRepository
+                        .findByProjectId(projectId)
+                        .map(
+                                existing -> {
+                                    existing.rename(requested.name(), now);
+                                    return existing;
+                                })
+                        .orElseGet(
+                                () ->
+                                        gateRepository.save(
+                                                new QualityGate(
+                                                        UUID.randomUUID(),
+                                                        organizationId,
+                                                        projectId,
+                                                        requested.name(),
+                                                        now)));
 
         conditionRepository.deleteAllByQualityGateId(gate.getId());
         int position = 0;
         for (GateCondition condition : requested.conditions()) {
-            conditionRepository.save(new QualityGateCondition(
-                    UUID.randomUUID(), organizationId, gate.getId(), condition.type(), condition.threshold(), position));
+            conditionRepository.save(
+                    new QualityGateCondition(
+                            UUID.randomUUID(),
+                            organizationId,
+                            gate.getId(),
+                            condition.type(),
+                            condition.threshold(),
+                            position));
             position++;
         }
         return requested;
     }
 
     private QualityGateDefinition toDefinition(QualityGate gate) {
-        var conditions = conditionRepository.findAllByQualityGateIdOrderByPosition(gate.getId()).stream()
-                .map(QualityGateCondition::toGateCondition)
-                .toList();
+        var conditions =
+                conditionRepository.findAllByQualityGateIdOrderByPosition(gate.getId()).stream()
+                        .map(QualityGateCondition::toGateCondition)
+                        .toList();
         return new QualityGateDefinition(gate.getName(), conditions);
     }
 

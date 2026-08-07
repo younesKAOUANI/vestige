@@ -29,9 +29,11 @@ public class GateController {
     }
 
     @PutMapping
-    public GateConfigResponse replace(@PathVariable UUID projectId, @Valid @RequestBody GateConfigRequest request) {
+    public GateConfigResponse replace(
+            @PathVariable UUID projectId, @Valid @RequestBody GateConfigRequest request) {
         UUID organizationId = TenantContext.require();
         return GateConfigResponse.of(
-                gateConfigService.replaceGate(organizationId, projectId, request.toDefinition(), Instant.now()));
+                gateConfigService.replaceGate(
+                        organizationId, projectId, request.toDefinition(), Instant.now()));
     }
 }

@@ -6,7 +6,10 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface TriageEventRepository extends JpaRepository<TriageEvent, UUID> {
 
-    /** One issue's full triage timeline, oldest first - part of {@code GET /api/v1/issues/{id}/history} (§8). */
+    /**
+     * One issue's full triage timeline, oldest first - part of {@code GET
+     * /api/v1/issues/{id}/history} (§8).
+     */
     List<TriageEvent> findAllByIssueIdOrderBySequenceNumberAsc(UUID issueId);
 
     /**

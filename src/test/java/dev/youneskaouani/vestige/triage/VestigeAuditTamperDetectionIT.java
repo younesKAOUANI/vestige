@@ -53,32 +53,23 @@ import org.springframework.jdbc.core.JdbcTemplate;
 @Tag("integration")
 class VestigeAuditTamperDetectionIT extends AbstractIntegrationTest {
 
-    @Autowired
-    private OrganizationRepository organizationRepository;
+    @Autowired private OrganizationRepository organizationRepository;
 
-    @Autowired
-    private ProjectRepository projectRepository;
+    @Autowired private ProjectRepository projectRepository;
 
-    @Autowired
-    private BranchRepository branchRepository;
+    @Autowired private BranchRepository branchRepository;
 
-    @Autowired
-    private AnalysisRunRepository analysisRunRepository;
+    @Autowired private AnalysisRunRepository analysisRunRepository;
 
-    @Autowired
-    private IssueRepository issueRepository;
+    @Autowired private IssueRepository issueRepository;
 
-    @Autowired
-    private TriageEventAppender appender;
+    @Autowired private TriageEventAppender appender;
 
-    @Autowired
-    private AuditChainVerifier verifier;
+    @Autowired private AuditChainVerifier verifier;
 
-    @Autowired
-    private TriageEventRepository triageEventRepository;
+    @Autowired private TriageEventRepository triageEventRepository;
 
-    @Autowired
-    private JdbcTemplate jdbcTemplate;
+    @Autowired private JdbcTemplate jdbcTemplate;
 
     private UUID organizationId;
     private UUID issueId;
@@ -91,22 +82,73 @@ class VestigeAuditTamperDetectionIT extends AbstractIntegrationTest {
         Instant now = Instant.now();
         String slug = "audit-" + organizationId;
         organizationRepository.save(new Organization(organizationId, slug, slug, now));
-        Project project = projectRepository.save(
-                new Project(UUID.randomUUID(), organizationId, "github", "acme", slug, "main", now));
-        Branch branch = branchRepository.save(
-                new Branch(UUID.randomUUID(), organizationId, project.getId(), "main", true, now));
-        AnalysisRun run = analysisRunRepository.save(new AnalysisRun(
-                UUID.randomUUID(), organizationId, project.getId(), branch.getId(), "abc123", null, "ESLint", "8.0.0",
-                "digest-" + slug, null, now));
-        Issue issue = issueRepository.save(new Issue(
-                UUID.randomUUID(), organizationId, project.getId(), branch.getId(), "java:S1234", Severity.MAJOR,
-                "Do not do that", "src/main/java/Foo.java", null, 5, run.getId(), "abc123", now));
+        Project project =
+                projectRepository.save(
+                        new Project(
+                                UUID.randomUUID(),
+                                organizationId,
+                                "github",
+                                "acme",
+                                slug,
+                                "main",
+                                now));
+        Branch branch =
+                branchRepository.save(
+                        new Branch(
+                                UUID.randomUUID(),
+                                organizationId,
+                                project.getId(),
+                                "main",
+                                true,
+                                now));
+        AnalysisRun run =
+                analysisRunRepository.save(
+                        new AnalysisRun(
+                                UUID.randomUUID(),
+                                organizationId,
+                                project.getId(),
+                                branch.getId(),
+                                "abc123",
+                                null,
+                                "ESLint",
+                                "8.0.0",
+                                "digest-" + slug,
+                                null,
+                                now));
+        Issue issue =
+                issueRepository.save(
+                        new Issue(
+                                UUID.randomUUID(),
+                                organizationId,
+                                project.getId(),
+                                branch.getId(),
+                                "java:S1234",
+                                Severity.MAJOR,
+                                "Do not do that",
+                                "src/main/java/Foo.java",
+                                null,
+                                5,
+                                run.getId(),
+                                "abc123",
+                                now));
         issueId = issue.getId();
 
         appender.append(
-                organizationId, issueId, "younes", IssueStatus.OPEN, IssueStatus.RESOLVED_WONT_FIX, "accepted risk", now);
+                organizationId,
+                issueId,
+                "younes",
+                IssueStatus.OPEN,
+                IssueStatus.RESOLVED_WONT_FIX,
+                "accepted risk",
+                now);
         appender.append(
-                organizationId, issueId, "younes", IssueStatus.RESOLVED_WONT_FIX, IssueStatus.OPEN, null, now.plusSeconds(60));
+                organizationId,
+                issueId,
+                "younes",
+                IssueStatus.RESOLVED_WONT_FIX,
+                IssueStatus.OPEN,
+                null,
+                now.plusSeconds(60));
         appender.append(
                 organizationId,
                 issueId,
@@ -125,37 +167,56 @@ class VestigeAuditTamperDetectionIT extends AbstractIntegrationTest {
     @Test
     @DisplayName("a freshly-appended chain verifies intact against a real database")
     void freshChainVerifiesIntact() {
-        assertThat(verifier.verify()).isEqualTo(new AuditChainVerifier.VerificationResult.Intact(3));
+        assertThat(verifier.verify())
+                .isEqualTo(new AuditChainVerifier.VerificationResult.Intact(3));
     }
 
     @Test
-    @DisplayName("V4's trigger blocks a direct UPDATE, even though vestige_app is granted UPDATE on the table")
+    @DisplayName(
+            "V4's trigger blocks a direct UPDATE, even though vestige_app is granted UPDATE on the table")
     void directUpdateIsBlockedByTheTrigger() {
         UUID targetId =
-                triageEventRepository.findAllByIssueIdOrderBySequenceNumberAsc(issueId).get(1).getId();
+                triageEventRepository
+                        .findAllByIssueIdOrderBySequenceNumberAsc(issueId)
+                        .get(1)
+                        .getId();
 
-        assertThatThrownBy(() -> jdbcTemplate.update(
-                        "update triage_event set justification = ? where id = ?", "tampered after the fact", targetId))
+        assertThatThrownBy(
+                        () ->
+                                jdbcTemplate.update(
+                                        "update triage_event set justification = ? where id = ?",
+                                        "tampered after the fact",
+                                        targetId))
                 .isInstanceOf(DataAccessException.class);
 
-        assertThat(verifier.verify()).isEqualTo(new AuditChainVerifier.VerificationResult.Intact(3));
+        assertThat(verifier.verify())
+                .isEqualTo(new AuditChainVerifier.VerificationResult.Intact(3));
     }
 
     @Test
     @DisplayName("V4's trigger blocks a direct DELETE the same way")
     void directDeleteIsBlockedByTheTrigger() {
         UUID targetId =
-                triageEventRepository.findAllByIssueIdOrderBySequenceNumberAsc(issueId).get(0).getId();
+                triageEventRepository
+                        .findAllByIssueIdOrderBySequenceNumberAsc(issueId)
+                        .get(0)
+                        .getId();
 
-        assertThatThrownBy(() -> jdbcTemplate.update("delete from triage_event where id = ?", targetId))
+        assertThatThrownBy(
+                        () ->
+                                jdbcTemplate.update(
+                                        "delete from triage_event where id = ?", targetId))
                 .isInstanceOf(DataAccessException.class);
 
-        assertThat(triageEventRepository.findAllByIssueIdOrderBySequenceNumberAsc(issueId)).hasSize(3);
-        assertThat(verifier.verify()).isEqualTo(new AuditChainVerifier.VerificationResult.Intact(3));
+        assertThat(triageEventRepository.findAllByIssueIdOrderBySequenceNumberAsc(issueId))
+                .hasSize(3);
+        assertThat(verifier.verify())
+                .isEqualTo(new AuditChainVerifier.VerificationResult.Intact(3));
     }
 
     @Test
-    @DisplayName("a row inserted directly, bypassing TriageEventAppender's hashing, is caught on verify")
+    @DisplayName(
+            "a row inserted directly, bypassing TriageEventAppender's hashing, is caught on verify")
     void aFabricatedInsertIsCaughtOnVerify() {
         // INSERT is not among the operations V4's trigger guards - only UPDATE/DELETE, since an
         // append-only log's whole point is that new rows are always allowed. A fabricated insert is

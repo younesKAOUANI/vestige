@@ -13,8 +13,7 @@ import java.nio.file.Path;
  */
 public final class CorpusLocator {
 
-    private CorpusLocator() {
-    }
+    private CorpusLocator() {}
 
     public static Path locateCasesDirectory() {
         Path start = Path.of("").toAbsolutePath();

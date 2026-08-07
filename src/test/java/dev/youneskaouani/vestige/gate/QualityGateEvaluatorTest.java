@@ -27,8 +27,8 @@ class QualityGateEvaluatorTest {
     @Test
     @DisplayName("passes when there is nothing to complain about")
     void passesOnAQuietRun() {
-        GateOutcome outcome = evaluator.evaluate(
-                QualityGateDefinition.defaultGate(), new GateInput(List.of()));
+        GateOutcome outcome =
+                evaluator.evaluate(QualityGateDefinition.defaultGate(), new GateInput(List.of()));
 
         assertThat(outcome.status()).isEqualTo(GateStatus.PASS);
         assertThat(outcome.failures()).isEmpty();
@@ -38,9 +38,10 @@ class QualityGateEvaluatorTest {
     @Test
     @DisplayName("fails on a new critical issue, regardless of which line it sits on")
     void failsOnNewCriticalIssue() {
-        GateOutcome outcome = evaluator.evaluate(
-                QualityGateDefinition.defaultGate(),
-                new GateInput(List.of(issue("new-1", Severity.CRITICAL, true))));
+        GateOutcome outcome =
+                evaluator.evaluate(
+                        QualityGateDefinition.defaultGate(),
+                        new GateInput(List.of(issue("new-1", Severity.CRITICAL, true))));
 
         assertThat(outcome.status()).isEqualTo(GateStatus.FAIL);
         assertThat(outcome.failures())
@@ -52,11 +53,13 @@ class QualityGateEvaluatorTest {
     }
 
     @Test
-    @DisplayName("a blocker also satisfies the critical-or-above condition, because it is at least as bad")
+    @DisplayName(
+            "a blocker also satisfies the critical-or-above condition, because it is at least as bad")
     void blockerCountsAsCriticalOrAbove() {
-        GateOutcome outcome = evaluator.evaluate(
-                QualityGateDefinition.defaultGate(),
-                new GateInput(List.of(issue("new-1", Severity.BLOCKER, true))));
+        GateOutcome outcome =
+                evaluator.evaluate(
+                        QualityGateDefinition.defaultGate(),
+                        new GateInput(List.of(issue("new-1", Severity.BLOCKER, true))));
 
         assertThat(outcome.failures())
                 .extracting(c -> c.condition().type())
@@ -67,12 +70,18 @@ class QualityGateEvaluatorTest {
     @DisplayName("fails when the new issue count exceeds the budget, and not before")
     void enforcesNewIssueBudget() {
         QualityGateDefinition gate =
-                new QualityGateDefinition("budget", List.of(new GateCondition(ConditionType.NEW_ISSUES_TOTAL, 2)));
+                new QualityGateDefinition(
+                        "budget", List.of(new GateCondition(ConditionType.NEW_ISSUES_TOTAL, 2)));
 
-        GateInput justEnough = new GateInput(
-                List.of(issue("a", Severity.INFO, true), issue("b", Severity.INFO, true)));
-        GateInput oneTooMany = new GateInput(List.of(
-                issue("a", Severity.INFO, true), issue("b", Severity.INFO, true), issue("c", Severity.INFO, true)));
+        GateInput justEnough =
+                new GateInput(
+                        List.of(issue("a", Severity.INFO, true), issue("b", Severity.INFO, true)));
+        GateInput oneTooMany =
+                new GateInput(
+                        List.of(
+                                issue("a", Severity.INFO, true),
+                                issue("b", Severity.INFO, true),
+                                issue("c", Severity.INFO, true)));
 
         assertThat(evaluator.evaluate(gate, justEnough).status()).isEqualTo(GateStatus.PASS);
 
@@ -85,8 +94,15 @@ class QualityGateEvaluatorTest {
     @Test
     @DisplayName("fails when a resolved issue comes back")
     void failsOnReopenedIssues() {
-        GateInput input = new GateInput(
-                List.of(new GateInput.GateIssue("old-1", Severity.MINOR, IssueStatus.REOPENED, false, true)));
+        GateInput input =
+                new GateInput(
+                        List.of(
+                                new GateInput.GateIssue(
+                                        "old-1",
+                                        Severity.MINOR,
+                                        IssueStatus.REOPENED,
+                                        false,
+                                        true)));
 
         GateOutcome outcome = evaluator.evaluate(QualityGateDefinition.defaultGate(), input);
 
@@ -97,10 +113,18 @@ class QualityGateEvaluatorTest {
     }
 
     @Test
-    @DisplayName("total blocker count looks at every outstanding issue, not just this run's new ones")
+    @DisplayName(
+            "total blocker count looks at every outstanding issue, not just this run's new ones")
     void totalBlockerScopeIsTheWholeProject() {
-        GateInput input = new GateInput(List.of(
-                new GateInput.GateIssue("old-blocker", Severity.BLOCKER, IssueStatus.OPEN, false, false)));
+        GateInput input =
+                new GateInput(
+                        List.of(
+                                new GateInput.GateIssue(
+                                        "old-blocker",
+                                        Severity.BLOCKER,
+                                        IssueStatus.OPEN,
+                                        false,
+                                        false)));
 
         GateOutcome outcome = evaluator.evaluate(QualityGateDefinition.defaultGate(), input);
 
@@ -113,9 +137,21 @@ class QualityGateEvaluatorTest {
     @Test
     @DisplayName("never fails on an issue a human already triaged away")
     void ignoresTriagedIssues() {
-        GateInput accepted = new GateInput(List.of(
-                new GateInput.GateIssue("a", Severity.BLOCKER, IssueStatus.RESOLVED_WONT_FIX, true, false),
-                new GateInput.GateIssue("b", Severity.BLOCKER, IssueStatus.RESOLVED_FALSE_POSITIVE, true, true)));
+        GateInput accepted =
+                new GateInput(
+                        List.of(
+                                new GateInput.GateIssue(
+                                        "a",
+                                        Severity.BLOCKER,
+                                        IssueStatus.RESOLVED_WONT_FIX,
+                                        true,
+                                        false),
+                                new GateInput.GateIssue(
+                                        "b",
+                                        Severity.BLOCKER,
+                                        IssueStatus.RESOLVED_FALSE_POSITIVE,
+                                        true,
+                                        true)));
 
         assertThat(evaluator.evaluate(QualityGateDefinition.defaultGate(), accepted).status())
                 .isEqualTo(GateStatus.PASS);
@@ -124,9 +160,10 @@ class QualityGateEvaluatorTest {
     @Test
     @DisplayName("reports every condition, not just the failing ones")
     void reportsEveryCondition() {
-        GateOutcome outcome = evaluator.evaluate(
-                QualityGateDefinition.defaultGate(),
-                new GateInput(List.of(issue("new-1", Severity.CRITICAL, true))));
+        GateOutcome outcome =
+                evaluator.evaluate(
+                        QualityGateDefinition.defaultGate(),
+                        new GateInput(List.of(issue("new-1", Severity.CRITICAL, true))));
 
         assertThat(outcome.conditions()).hasSize(4);
         assertThat(outcome.conditions())
@@ -143,7 +180,8 @@ class QualityGateEvaluatorTest {
     @DisplayName("caps how many offending issues a failing condition names")
     void capsOffenderList() {
         QualityGateDefinition gate =
-                new QualityGateDefinition("zero", List.of(new GateCondition(ConditionType.NEW_ISSUES_TOTAL, 0)));
+                new QualityGateDefinition(
+                        "zero", List.of(new GateCondition(ConditionType.NEW_ISSUES_TOTAL, 0)));
         List<GateInput.GateIssue> many = new ArrayList<>();
         for (int i = 0; i < 100; i++) {
             many.add(issue("issue-" + i, Severity.INFO, true));

@@ -8,8 +8,7 @@ public final class Problems {
     /** Base URI the {@code type} of every problem is resolved against. */
     public static final String BASE_URI = "https://vestige.youneskaouani.dev/problems/";
 
-    private Problems() {
-    }
+    private Problems() {}
 
     /** The caller asked for something that does not exist, or that its tenant cannot see. */
     public static final class NotFound extends VestigeException {

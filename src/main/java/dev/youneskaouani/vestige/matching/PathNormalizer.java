@@ -11,8 +11,7 @@ package dev.youneskaouani.vestige.matching;
  */
 public final class PathNormalizer {
 
-    private PathNormalizer() {
-    }
+    private PathNormalizer() {}
 
     public static String normalize(String rawPath) {
         if (rawPath == null || rawPath.isBlank()) {

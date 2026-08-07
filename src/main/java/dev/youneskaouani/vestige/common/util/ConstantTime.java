@@ -6,8 +6,7 @@ import java.security.MessageDigest;
 /** Comparisons whose duration does not depend on where the first differing byte is. */
 public final class ConstantTime {
 
-    private ConstantTime() {
-    }
+    private ConstantTime() {}
 
     /**
      * Compares two secrets without leaking their contents through timing.

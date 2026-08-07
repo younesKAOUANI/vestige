@@ -3,8 +3,8 @@ package dev.youneskaouani.vestige.matching;
 import java.util.function.Function;
 
 /**
- * The three rungs of §3.3's ladder, in the exact order they are tried: strong evidence first,
- * weak evidence last, each completing fully before the next begins.
+ * The three rungs of §3.3's ladder, in the exact order they are tried: strong evidence first, weak
+ * evidence last, each completing fully before the next begins.
  */
 public enum Rung {
     IDENTITY(Fingerprints::identityFp),

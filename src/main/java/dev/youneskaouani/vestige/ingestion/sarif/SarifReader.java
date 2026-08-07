@@ -18,39 +18,39 @@ import java.util.function.Consumer;
 /**
  * Turns an uploaded SARIF 2.1.0 report into the findings the rest of Vestige works with.
  *
- * <p>Reads with Jackson's streaming (pull) API rather than {@code ObjectMapper.readValue}: a
- * report can be up to {@code vestige.ingestion.max-report-bytes} (200 MB by default), and binding
- * that to a full object graph before extracting a handful of fields per result would hold several
- * times its size in Java objects for no benefit. {@link JsonParser#nextToken()} instead walks the
- * document's shape directly; {@link ObjectMapper#readTree(JsonParser)} is used only for small,
- * bounded sub-objects - one {@code tool}, one {@code artifacts[i]}, one {@code results[i]} at a
- * time - which is the standard, documented way to mix Jackson's streaming and tree APIs, and is
- * never asked to hold the {@code results} array (the one that can be large) as a whole.
+ * <p>Reads with Jackson's streaming (pull) API rather than {@code ObjectMapper.readValue}: a report
+ * can be up to {@code vestige.ingestion.max-report-bytes} (200 MB by default), and binding that to
+ * a full object graph before extracting a handful of fields per result would hold several times its
+ * size in Java objects for no benefit. {@link JsonParser#nextToken()} instead walks the document's
+ * shape directly; {@link ObjectMapper#readTree(JsonParser)} is used only for small, bounded
+ * sub-objects - one {@code tool}, one {@code artifacts[i]}, one {@code results[i]} at a time -
+ * which is the standard, documented way to mix Jackson's streaming and tree APIs, and is never
+ * asked to hold the {@code results} array (the one that can be large) as a whole.
  *
  * <p>Only the first {@code run} in {@code runs} is read; SARIF's multi-run reports are not used
  * here.
  *
  * <h2>Field order and batching</h2>
  *
- * <p>Resolving a result fully needs two things that are <em>siblings</em> of {@code results}
- * within the same {@code run} object: {@code tool.driver.rules[].defaultConfiguration.level}
- * (when a result omits its own {@code level}), and {@code artifacts[].location.uri} (when a
- * location references an artifact by {@code index} rather than inlining {@code uri} directly).
- * Because SARIF does not guarantee field order, a result can stream past before the sibling it
- * would need has been seen - so results are first reduced, one bounded {@code JsonNode} at a time,
- * to a small pending record that keeps everything unresolved (rule id/index, level-or-absent,
- * uri-or-index), and resolution happens in one final pass once the whole run object has been read
- * and {@code tool}/{@code artifacts} are known for good. That final pass is also where {@code
- * batchConsumer} is invoked every {@code batchSize} findings - see {@link #read(byte[], int,
- * Consumer)}. The trade-off this makes deliberately: JSON parsing is fully streaming end to end
- * (no full-document tree, no whole-array binding, one small node in memory at a time), while the
- * database-batching pass runs after it rather than perfectly interleaved with token consumption.
- * The alternative - flushing eagerly whenever a result's dependencies happen to already be known -
- * was tried and rejected: it made the batches' (and therefore the persisted {@code finding.seq}
- * identity column's) order depend on where {@code tool}/{@code artifacts} happen to sit in the
- * document, silently breaking the "lowest finding id" tie-break's connection to parse order for
- * exactly the reports where field order is least conventional. A single, always-in-order pass is
- * worth the small amount of buffering it costs.
+ * <p>Resolving a result fully needs two things that are <em>siblings</em> of {@code results} within
+ * the same {@code run} object: {@code tool.driver.rules[].defaultConfiguration.level} (when a
+ * result omits its own {@code level}), and {@code artifacts[].location.uri} (when a location
+ * references an artifact by {@code index} rather than inlining {@code uri} directly). Because SARIF
+ * does not guarantee field order, a result can stream past before the sibling it would need has
+ * been seen - so results are first reduced, one bounded {@code JsonNode} at a time, to a small
+ * pending record that keeps everything unresolved (rule id/index, level-or-absent, uri-or-index),
+ * and resolution happens in one final pass once the whole run object has been read and {@code
+ * tool}/{@code artifacts} are known for good. That final pass is also where {@code batchConsumer}
+ * is invoked every {@code batchSize} findings - see {@link #read(byte[], int, Consumer)}. The
+ * trade-off this makes deliberately: JSON parsing is fully streaming end to end (no full-document
+ * tree, no whole-array binding, one small node in memory at a time), while the database-batching
+ * pass runs after it rather than perfectly interleaved with token consumption. The alternative -
+ * flushing eagerly whenever a result's dependencies happen to already be known - was tried and
+ * rejected: it made the batches' (and therefore the persisted {@code finding.seq} identity
+ * column's) order depend on where {@code tool}/{@code artifacts} happen to sit in the document,
+ * silently breaking the "lowest finding id" tie-break's connection to parse order for exactly the
+ * reports where field order is least conventional. A single, always-in-order pass is worth the
+ * small amount of buffering it costs.
  */
 public final class SarifReader {
 
@@ -62,18 +62,20 @@ public final class SarifReader {
         this.objectMapper = objectMapper;
     }
 
-    /** {@link #read(byte[], int, Consumer)} with no batching - convenient for tests and small reports. */
+    /**
+     * {@link #read(byte[], int, Consumer)} with no batching - convenient for tests and small
+     * reports.
+     */
     public AnalysisReport read(byte[] sarif) {
-        return read(sarif, Integer.MAX_VALUE, batch -> {
-        });
+        return read(sarif, Integer.MAX_VALUE, batch -> {});
     }
 
     /**
-     * Reads only as far as the first run's {@code tool.driver} name and version, then stops -
-     * never touching {@code results} or {@code artifacts}, however large they are.
+     * Reads only as far as the first run's {@code tool.driver} name and version, then stops - never
+     * touching {@code results} or {@code artifacts}, however large they are.
      *
-     * <p>Exists for one reason: {@code POST /api/v1/runs} needs the analyser name synchronously,
-     * to compute §4.1's idempotency fallback key ({@code sha256(project‖commit‖analyser‖
+     * <p>Exists for one reason: {@code POST /api/v1/runs} needs the analyser name synchronously, to
+     * compute §4.1's idempotency fallback key ({@code sha256(project‖commit‖analyser‖
      * report_digest)}) and to satisfy {@code analysis_run.analyser_name}'s {@code NOT NULL}
      * constraint, before the run is even queued - but the full parse (§4.2) deliberately happens
      * later, on the worker, off the request thread. This method is what lets both of those be true
@@ -129,19 +131,19 @@ public final class SarifReader {
     }
 
     /** The two fields {@link #peekToolIdentity} bothers to read. */
-    public record ToolIdentity(String name, String version) {
-    }
+    public record ToolIdentity(String name, String version) {}
 
     /**
      * Parses {@code sarif}, delivering every usable finding to {@code batchConsumer} in parse
      * order, in batches of at most {@code batchSize} - where the caller's JDBC/JPA batch insert
-     * should happen (§4.2's "batched inserts of 1,000") - and also returning the complete,
-     * ordered report, which the matcher (§3.3) needs as a whole regardless of how it was written.
+     * should happen (§4.2's "batched inserts of 1,000") - and also returning the complete, ordered
+     * report, which the matcher (§3.3) needs as a whole regardless of how it was written.
      *
      * @throws SarifParseException the bytes are not a readable SARIF document, or its first run
      *     does not name a tool
      */
-    public AnalysisReport read(byte[] sarif, int batchSize, Consumer<List<RawFinding>> batchConsumer) {
+    public AnalysisReport read(
+            byte[] sarif, int batchSize, Consumer<List<RawFinding>> batchConsumer) {
         if (sarif == null || sarif.length == 0) {
             throw new SarifParseException("SARIF report is empty");
         }
@@ -159,7 +161,8 @@ public final class SarifReader {
     }
 
     private AnalysisReport readDocument(
-            JsonParser parser, int batchSize, Consumer<List<RawFinding>> batchConsumer) throws IOException {
+            JsonParser parser, int batchSize, Consumer<List<RawFinding>> batchConsumer)
+            throws IOException {
         while (parser.nextToken() == JsonToken.FIELD_NAME) {
             String field = parser.currentName();
             parser.nextToken();
@@ -171,7 +174,8 @@ public final class SarifReader {
         throw new SarifParseException("SARIF document contains no runs");
     }
 
-    private AnalysisReport readRuns(JsonParser parser, int batchSize, Consumer<List<RawFinding>> batchConsumer)
+    private AnalysisReport readRuns(
+            JsonParser parser, int batchSize, Consumer<List<RawFinding>> batchConsumer)
             throws IOException {
         if (parser.currentToken() != JsonToken.START_ARRAY) {
             throw new SarifParseException("SARIF \"runs\" is not an array");
@@ -187,7 +191,8 @@ public final class SarifReader {
         return readRun(parser, batchSize, batchConsumer);
     }
 
-    private AnalysisReport readRun(JsonParser parser, int batchSize, Consumer<List<RawFinding>> batchConsumer)
+    private AnalysisReport readRun(
+            JsonParser parser, int batchSize, Consumer<List<RawFinding>> batchConsumer)
             throws IOException {
         ToolInfo tool = null;
         List<String> artifactUris = List.of();
@@ -238,15 +243,19 @@ public final class SarifReader {
         return new AnalysisReport(tool.name(), tool.effectiveVersion(), all);
     }
 
-    /** Reads the (small, bounded) {@code tool} object: driver name/version and each rule's default level. */
+    /**
+     * Reads the (small, bounded) {@code tool} object: driver name/version and each rule's default
+     * level.
+     */
     private ToolInfo readTool(JsonParser parser) throws IOException {
         JsonNode toolNode = objectMapper.readTree(parser);
         JsonNode driver = toolNode.path("driver");
         String name = driver.path("name").asText(null);
         String semanticVersion = driver.path("semanticVersion").asText(null);
-        String version = (semanticVersion != null && !semanticVersion.isBlank())
-                ? semanticVersion
-                : driver.path("version").asText("unknown");
+        String version =
+                (semanticVersion != null && !semanticVersion.isBlank())
+                        ? semanticVersion
+                        : driver.path("version").asText("unknown");
 
         Map<String, String> defaultLevels = new LinkedHashMap<>();
         Map<Integer, String> ruleIdByIndex = new LinkedHashMap<>();
@@ -266,8 +275,10 @@ public final class SarifReader {
         return new ToolInfo(name, version, defaultLevels, ruleIdByIndex);
     }
 
-    /** Reads {@code artifacts}, keeping only {@code location.uri} - the (potentially large) embedded
-     *  {@code contents.text} is not read: §3.2's fingerprints need a line snippet, not a whole file. */
+    /**
+     * Reads {@code artifacts}, keeping only {@code location.uri} - the (potentially large) embedded
+     * {@code contents.text} is not read: §3.2's fingerprints need a line snippet, not a whole file.
+     */
     private List<String> readArtifactUris(JsonParser parser) throws IOException {
         if (parser.currentToken() != JsonToken.START_ARRAY) {
             throw new SarifParseException("SARIF \"artifacts\" is not an array");
@@ -283,7 +294,8 @@ public final class SarifReader {
 
     /** Skips whatever value the parser is currently positioned on, object/array or scalar. */
     private void skipValue(JsonParser parser) throws IOException {
-        if (parser.currentToken() == JsonToken.START_OBJECT || parser.currentToken() == JsonToken.START_ARRAY) {
+        if (parser.currentToken() == JsonToken.START_OBJECT
+                || parser.currentToken() == JsonToken.START_ARRAY) {
             parser.skipChildren();
         }
         // A scalar token is already fully consumed by the nextToken() that produced it.
@@ -291,7 +303,8 @@ public final class SarifReader {
 
     private PendingResult extractPending(JsonNode result, int ordinal) {
         String ruleId = result.path("ruleId").asText(null);
-        Integer ruleIndex = result.path("ruleIndex").isInt() ? result.path("ruleIndex").asInt() : null;
+        Integer ruleIndex =
+                result.path("ruleIndex").isInt() ? result.path("ruleIndex").asInt() : null;
         String level = result.path("level").asText(null);
         String messageText = result.path("message").path("text").asText(null);
         Double securitySeverity = securitySeverity(result.path("properties"));
@@ -304,7 +317,10 @@ public final class SarifReader {
                 continue;
             }
             String uri = artifactLocation.path("uri").asText(null);
-            Integer index = artifactLocation.path("index").isInt() ? artifactLocation.path("index").asInt() : null;
+            Integer index =
+                    artifactLocation.path("index").isInt()
+                            ? artifactLocation.path("index").asInt()
+                            : null;
             JsonNode region = physical.path("region");
             int startLine = region.path("startLine").asInt(1);
             if (startLine < 1) {
@@ -316,11 +332,20 @@ public final class SarifReader {
             String snippet = region.path("snippet").path("text").asText(null);
             String symbolPath = firstLogicalLocationName(location.path("logicalLocations"));
 
-            locations.add(new CandidateLocation(
-                    uri, index, startLine, endLine, startColumn, endColumn, snippet, symbolPath));
+            locations.add(
+                    new CandidateLocation(
+                            uri,
+                            index,
+                            startLine,
+                            endLine,
+                            startColumn,
+                            endColumn,
+                            snippet,
+                            symbolPath));
         }
 
-        return new PendingResult(ordinal, ruleId, ruleIndex, level, messageText, securitySeverity, locations);
+        return new PendingResult(
+                ordinal, ruleId, ruleIndex, level, messageText, securitySeverity, locations);
     }
 
     /** The first {@code logicalLocations[].fullyQualifiedName} on a location, or {@code null}. */
@@ -368,12 +393,20 @@ public final class SarifReader {
         return value;
     }
 
-    /** The driver identity plus enough of {@code rules[]} to resolve a result's severity and rule id. */
+    /**
+     * The driver identity plus enough of {@code rules[]} to resolve a result's severity and rule
+     * id.
+     */
     private record ToolInfo(
-            String name, String effectiveVersion, Map<String, String> defaultLevelsByRuleId, Map<Integer, String> ruleIdByIndex) {
-    }
+            String name,
+            String effectiveVersion,
+            Map<String, String> defaultLevelsByRuleId,
+            Map<Integer, String> ruleIdByIndex) {}
 
-    /** One {@code locations[]} entry, kept exactly as reported - resolving {@code uri-or-index} waits for {@link ToolInfo}. */
+    /**
+     * One {@code locations[]} entry, kept exactly as reported - resolving {@code uri-or-index}
+     * waits for {@link ToolInfo}.
+     */
     private record CandidateLocation(
             String uri,
             Integer artifactIndex,
@@ -382,13 +415,12 @@ public final class SarifReader {
             int startColumn,
             int endColumn,
             String snippet,
-            String symbolPath) {
-    }
+            String symbolPath) {}
 
     /**
-     * A {@code results[]} entry with every field extracted but not yet resolved against its
-     * sibling {@code tool}/{@code artifacts} data, which may not have streamed past yet at the
-     * point this is built - see the class javadoc's "Field order and batching" section.
+     * A {@code results[]} entry with every field extracted but not yet resolved against its sibling
+     * {@code tool}/{@code artifacts} data, which may not have streamed past yet at the point this
+     * is built - see the class javadoc's "Field order and batching" section.
      */
     private record PendingResult(
             int ordinal,
@@ -406,9 +438,10 @@ public final class SarifReader {
          *     reviewer
          */
         RawFinding resolve(ToolInfo tool, List<String> artifactUris) {
-            String resolvedRuleId = ruleId != null && !ruleId.isBlank()
-                    ? ruleId
-                    : (ruleIndex == null ? null : tool.ruleIdByIndex().get(ruleIndex));
+            String resolvedRuleId =
+                    ruleId != null && !ruleId.isBlank()
+                            ? ruleId
+                            : (ruleIndex == null ? null : tool.ruleIdByIndex().get(ruleIndex));
             if (resolvedRuleId == null || resolvedRuleId.isBlank()) {
                 return null;
             }
@@ -418,12 +451,18 @@ public final class SarifReader {
                 return null;
             }
 
-            String effectiveLevel = level != null ? level : tool.defaultLevelsByRuleId().get(resolvedRuleId);
+            String effectiveLevel =
+                    level != null ? level : tool.defaultLevelsByRuleId().get(resolvedRuleId);
             Severity severity = Severity.fromSarif(effectiveLevel, securitySeverity);
-            String message = messageText != null && !messageText.isBlank() ? messageText : resolvedRuleId;
+            String message =
+                    messageText != null && !messageText.isBlank() ? messageText : resolvedRuleId;
 
-            var fingerprints = FingerprintFactory.compute(
-                    resolvedRuleId, location.uri(), location.symbolPath(), location.snippet());
+            var fingerprints =
+                    FingerprintFactory.compute(
+                            resolvedRuleId,
+                            location.uri(),
+                            location.symbolPath(),
+                            location.snippet());
 
             return new RawFinding(
                     ordinal,
@@ -440,7 +479,10 @@ public final class SarifReader {
                     fingerprints);
         }
 
-        /** The first candidate location whose URI is known, either directly or via an artifact index. */
+        /**
+         * The first candidate location whose URI is known, either directly or via an artifact
+         * index.
+         */
         private CandidateLocation resolveLocation(List<String> artifactUris) {
             for (CandidateLocation candidate : locations) {
                 String resolvedUri = resolveUri(candidate, artifactUris);

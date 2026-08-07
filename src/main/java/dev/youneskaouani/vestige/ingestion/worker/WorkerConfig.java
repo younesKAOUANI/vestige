@@ -16,6 +16,7 @@ public class WorkerConfig {
     @Bean
     public RetryPolicy retryPolicy(VestigeProperties properties) {
         VestigeProperties.Worker worker = properties.worker();
-        return RetryPolicy.of(worker.retryBaseDelay(), worker.retryMaxDelay(), worker.maxAttempts());
+        return RetryPolicy.of(
+                worker.retryBaseDelay(), worker.retryMaxDelay(), worker.maxAttempts());
     }
 }

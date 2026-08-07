@@ -16,8 +16,7 @@ import dev.youneskaouani.vestige.common.hash.Sha256;
  */
 public final class FingerprintFactory {
 
-    private FingerprintFactory() {
-    }
+    private FingerprintFactory() {}
 
     /**
      * @param ruleId the analyser rule id, e.g. {@code java:S3649}
@@ -28,20 +27,23 @@ public final class FingerprintFactory {
      * @param rawLineSnippet the literal text of the flagged line, or {@code null}/blank when the
      *     analyser did not supply {@code region.snippet.text}
      */
-    public static Fingerprints compute(String ruleId, String rawFilePath, String symbolPath, String rawLineSnippet) {
+    public static Fingerprints compute(
+            String ruleId, String rawFilePath, String symbolPath, String rawLineSnippet) {
         if (ruleId == null || ruleId.isBlank()) {
             throw new IllegalArgumentException("ruleId is required to compute a fingerprint");
         }
         String path = PathNormalizer.normalize(rawFilePath);
 
-        String identityFp = (symbolPath == null || symbolPath.isBlank())
-                ? null
-                : Sha256.hexOfFields(ruleId, path, symbolPath);
+        String identityFp =
+                (symbolPath == null || symbolPath.isBlank())
+                        ? null
+                        : Sha256.hexOfFields(ruleId, path, symbolPath);
 
         String normalizedLine = LineNormalizer.normalize(rawLineSnippet);
-        String contextFp = (normalizedLine == null || normalizedLine.isEmpty())
-                ? null
-                : Sha256.hexOfFields(ruleId, path, normalizedLine);
+        String contextFp =
+                (normalizedLine == null || normalizedLine.isEmpty())
+                        ? null
+                        : Sha256.hexOfFields(ruleId, path, normalizedLine);
 
         String weakFp = Sha256.hexOfFields(ruleId, path);
 

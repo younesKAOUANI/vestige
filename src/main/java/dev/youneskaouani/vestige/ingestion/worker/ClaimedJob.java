@@ -8,5 +8,4 @@ import java.util.UUID;
  * moment the claiming transaction commits and is one field away from confusing "detached" with
  * "safe to read forever".
  */
-public record ClaimedJob(UUID jobId, UUID organizationId, UUID analysisRunId, int attemptCount) {
-}
+public record ClaimedJob(UUID jobId, UUID organizationId, UUID analysisRunId, int attemptCount) {}

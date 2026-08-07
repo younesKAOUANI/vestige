@@ -3,9 +3,9 @@ package dev.youneskaouani.vestige.tenancy.web;
 /**
  * Marks the current thread as the outbox worker, acting across every tenant rather than one.
  *
- * <p>The worker has to find the next runnable job before it can know which organisation it
- * belongs to (§4.2), so it cannot simply set {@link TenantContext} the way a request does. Instead
- * it sets this flag for exactly the query that claims a job; {@link
+ * <p>The worker has to find the next runnable job before it can know which organisation it belongs
+ * to (§4.2), so it cannot simply set {@link TenantContext} the way a request does. Instead it sets
+ * this flag for exactly the query that claims a job; {@link
  * dev.youneskaouani.vestige.tenancy.config.TenantRoutingDataSource} publishes it into the database
  * session as {@code vestige.worker = on}, which the {@code analysis_job}/{@code poison_report} row
  * level security policies treat as a second, explicit way in (V2 migration). Every other table's
@@ -20,8 +20,7 @@ public final class WorkerContext {
 
     private static final ThreadLocal<Boolean> ACTIVE = ThreadLocal.withInitial(() -> Boolean.FALSE);
 
-    private WorkerContext() {
-    }
+    private WorkerContext() {}
 
     public static void activate() {
         ACTIVE.set(Boolean.TRUE);

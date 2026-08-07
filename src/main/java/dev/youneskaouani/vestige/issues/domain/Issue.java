@@ -24,8 +24,7 @@ import java.util.UUID;
 @Table(name = "issue")
 public class Issue {
 
-    @Id
-    private UUID id;
+    @Id private UUID id;
 
     @Column(name = "organization_id", nullable = false)
     private UUID organizationId;
@@ -78,7 +77,10 @@ public class Issue {
         // for JPA
     }
 
-    /** Opens a brand-new issue from a finding that matched nothing (§3.3: {@code for c in unmatched_C}). */
+    /**
+     * Opens a brand-new issue from a finding that matched nothing (§3.3: {@code for c in
+     * unmatched_C}).
+     */
     public Issue(
             UUID id,
             UUID organizationId,
@@ -146,11 +148,11 @@ public class Issue {
     }
 
     /**
-     * A human triage decision (§6). Deliberately not restricted to
-     * {@link IssueStatus#requiresTriage()}'s two statuses: {@code PATCH /api/v1/issues/{id}} is also
-     * how a mistaken triage gets corrected back to {@code OPEN} - the "justification required"
-     * rule is enforced once, in {@code TriageService}, alongside writing the {@code TriageEvent}
-     * this change must never happen without.
+     * A human triage decision (§6). Deliberately not restricted to {@link
+     * IssueStatus#requiresTriage()}'s two statuses: {@code PATCH /api/v1/issues/{id}} is also how a
+     * mistaken triage gets corrected back to {@code OPEN} - the "justification required" rule is
+     * enforced once, in {@code TriageService}, alongside writing the {@code TriageEvent} this
+     * change must never happen without.
      */
     public void applyTriage(IssueStatus newStatus, Instant now) {
         this.status = newStatus;

@@ -34,11 +34,10 @@ import java.util.UUID;
  * }</pre>
  *
  * <p>The rename map is applied by the caller before {@link #match}: {@code
- * PreviousIssueCandidate.fingerprints()} is expected to already be computed against the
- * post-rename path (see {@link FingerprintFactory}'s javadoc and {@code
- * IssueMatchingService}). This class does not know about commits, SCM providers, or persistence -
- * it is a pure function of two lists, which is what lets it be replayed (§4.2) and unit-tested
- * without a database.
+ * PreviousIssueCandidate.fingerprints()} is expected to already be computed against the post-rename
+ * path (see {@link FingerprintFactory}'s javadoc and {@code IssueMatchingService}). This class does
+ * not know about commits, SCM providers, or persistence - it is a pure function of two lists, which
+ * is what lets it be replayed (§4.2) and unit-tested without a database.
  *
  * <p><b>Complexity.</b> Each rung builds one bucket map from the still-unmatched previous
  * candidates (O(|P|)) and does one pass over the still-unmatched current findings, each a O(1) hash
@@ -68,7 +67,8 @@ public final class IssueMatcher {
         Map<UUID, PreviousIssueCandidate> unmatchedPrevious = new LinkedHashMap<>();
         for (PreviousIssueCandidate candidate : previous) {
             if (unmatchedPrevious.put(candidate.issueId(), candidate) != null) {
-                throw new IllegalArgumentException("Duplicate candidate for issue " + candidate.issueId());
+                throw new IllegalArgumentException(
+                        "Duplicate candidate for issue " + candidate.issueId());
             }
         }
 
@@ -76,7 +76,8 @@ public final class IssueMatcher {
         List<Match> matches = new ArrayList<>();
 
         for (Rung rung : Rung.values()) {
-            Map<String, List<PreviousIssueCandidate>> buckets = bucketByRung(unmatchedPrevious.values(), rung);
+            Map<String, List<PreviousIssueCandidate>> buckets =
+                    bucketByRung(unmatchedPrevious.values(), rung);
 
             // Current findings are visited in their fixed, deterministic parse order (§3.3's
             // determinism requirement): the same report bytes always produce the same finding
@@ -95,7 +96,8 @@ public final class IssueMatcher {
                 if (bucketed == null || bucketed.isEmpty()) {
                     continue;
                 }
-                PreviousIssueCandidate best = selectBest(bucketed, incoming, rung, unmatchedPrevious);
+                PreviousIssueCandidate best =
+                        selectBest(bucketed, incoming, rung, unmatchedPrevious);
                 if (best == null) {
                     continue;
                 }
@@ -122,9 +124,9 @@ public final class IssueMatcher {
      * proximity, then lowest finding id") applied when two candidates are equally close.
      *
      * <p>{@code bucketed} is a snapshot taken at the top of this rung; a candidate claimed by an
-     * earlier {@code incoming} finding within this same rung is skipped via the live
-     * {@code unmatchedPrevious} check rather than by rebuilding every bucket after each match,
-     * which is what keeps a rung's cost linear in its own bucket sizes.
+     * earlier {@code incoming} finding within this same rung is skipped via the live {@code
+     * unmatchedPrevious} check rather than by rebuilding every bucket after each match, which is
+     * what keeps a rung's cost linear in its own bucket sizes.
      */
     private PreviousIssueCandidate selectBest(
             List<PreviousIssueCandidate> bucketed,
@@ -132,16 +134,18 @@ public final class IssueMatcher {
             Rung rung,
             Map<UUID, PreviousIssueCandidate> unmatchedPrevious) {
 
-        Comparator<PreviousIssueCandidate> byProximityThenLowestId = Comparator
-                .<PreviousIssueCandidate>comparingInt(candidate -> Math.abs(candidate.line() - incoming.line()))
-                .thenComparingLong(PreviousIssueCandidate::tieBreakSeq);
+        Comparator<PreviousIssueCandidate> byProximityThenLowestId =
+                Comparator.<PreviousIssueCandidate>comparingInt(
+                                candidate -> Math.abs(candidate.line() - incoming.line()))
+                        .thenComparingLong(PreviousIssueCandidate::tieBreakSeq);
 
         PreviousIssueCandidate best = null;
         for (PreviousIssueCandidate candidate : bucketed) {
             if (!unmatchedPrevious.containsKey(candidate.issueId())) {
                 continue;
             }
-            if (rung == Rung.WEAK && Math.abs(candidate.line() - incoming.line()) > weakLineProximity) {
+            if (rung == Rung.WEAK
+                    && Math.abs(candidate.line() - incoming.line()) > weakLineProximity) {
                 continue;
             }
             if (best == null || byProximityThenLowestId.compare(candidate, best) < 0) {

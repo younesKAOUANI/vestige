@@ -10,14 +10,14 @@ import org.springframework.util.unit.DataSize;
  * {@link dev.youneskaouani.vestige.VestigeApplication}.
  */
 @ConfigurationProperties("vestige")
-public record VestigeProperties(Ingestion ingestion, Worker worker, Matching matching, GitHub github) {
+public record VestigeProperties(
+        Ingestion ingestion, Worker worker, Matching matching, GitHub github) {
 
     /**
      * @param maxReportBytes §4.3: reports above this are rejected with 413 before parsing
      * @param findingBatchSize §4.3: how many findings accumulate before a batch INSERT flushes
      */
-    public record Ingestion(DataSize maxReportBytes, int findingBatchSize) {
-    }
+    public record Ingestion(DataSize maxReportBytes, int findingBatchSize) {}
 
     /**
      * @param pollInterval how often an idle worker checks the outbox for runnable jobs
@@ -32,12 +32,12 @@ public record VestigeProperties(Ingestion ingestion, Worker worker, Matching mat
             Duration leaseDuration,
             int maxAttempts,
             Duration retryBaseDelay,
-            Duration retryMaxDelay) {
-    }
+            Duration retryMaxDelay) {}
 
-    /** @param weakFingerprintLineProximity the "&le; 25" in §3.2's rung-3 fingerprint */
-    public record Matching(int weakFingerprintLineProximity) {
-    }
+    /**
+     * @param weakFingerprintLineProximity the "&le; 25" in §3.2's rung-3 fingerprint
+     */
+    public record Matching(int weakFingerprintLineProximity) {}
 
     /**
      * @param token optional GitHub token used for the compare API (renames, §3.2) and Check Runs
@@ -46,6 +46,5 @@ public record VestigeProperties(Ingestion ingestion, Worker worker, Matching mat
      * @param webhookSecret HMAC secret for {@code POST /api/v1/webhooks/github}; blank means the
      *     webhook endpoint refuses every request rather than accepting unverified ones
      */
-    public record GitHub(String token, String webhookSecret) {
-    }
+    public record GitHub(String token, String webhookSecret) {}
 }

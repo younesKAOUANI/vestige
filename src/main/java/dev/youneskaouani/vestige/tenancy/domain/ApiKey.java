@@ -17,8 +17,7 @@ import java.util.UUID;
 @Table(name = "api_key")
 public class ApiKey {
 
-    @Id
-    private UUID id;
+    @Id private UUID id;
 
     @Column(name = "organization_id", nullable = false)
     private UUID organizationId;
@@ -46,7 +45,12 @@ public class ApiKey {
     }
 
     public ApiKey(
-            UUID id, UUID organizationId, String name, String keyPrefix, String keyHash, Instant createdAt) {
+            UUID id,
+            UUID organizationId,
+            String name,
+            String keyPrefix,
+            String keyHash,
+            Instant createdAt) {
         this.id = id;
         this.organizationId = organizationId;
         this.name = name;

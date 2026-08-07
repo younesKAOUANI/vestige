@@ -38,10 +38,13 @@ class IssueMatcherTest {
     // ---------------------------------------------------------------------------------------
 
     @Test
-    @DisplayName("matches on identity_fp when the symbol path is stable, regardless of line and literal changes")
+    @DisplayName(
+            "matches on identity_fp when the symbol path is stable, regardless of line and literal changes")
     void matchesOnIdentityFingerprint() {
-        Fingerprints beforeFp = fp("java:S3649", "PaymentService.java", "PaymentService#refund", "sql = a + 1");
-        Fingerprints afterFp = fp("java:S3649", "PaymentService.java", "PaymentService#refund", "sql = b + 2");
+        Fingerprints beforeFp =
+                fp("java:S3649", "PaymentService.java", "PaymentService#refund", "sql = a + 1");
+        Fingerprints afterFp =
+                fp("java:S3649", "PaymentService.java", "PaymentService#refund", "sql = b + 2");
 
         PreviousIssueCandidate p = previous(1, 42, beforeFp);
         IncomingFinding c = current(0, 58, afterFp);
@@ -62,8 +65,10 @@ class IssueMatcherTest {
     @Test
     @DisplayName("falls back to context_fp when the analyser supplies no symbol path")
     void fallsBackToContextFingerprintWithoutASymbolPath() {
-        Fingerprints beforeFp = fp("java:S2259", "OrderService.java", null, "  return order.normalise();");
-        Fingerprints afterFp = fp("java:S2259", "OrderService.java", null, "return order.normalise();  ");
+        Fingerprints beforeFp =
+                fp("java:S2259", "OrderService.java", null, "  return order.normalise();");
+        Fingerprints afterFp =
+                fp("java:S2259", "OrderService.java", null, "return order.normalise();  ");
 
         PreviousIssueCandidate p = previous(1, 12, beforeFp);
         IncomingFinding c = current(0, 20, afterFp);
@@ -75,10 +80,12 @@ class IssueMatcherTest {
     }
 
     @Test
-    @DisplayName("identity_fp is tried before context_fp: strong evidence wins even when a weaker match exists too")
+    @DisplayName(
+            "identity_fp is tried before context_fp: strong evidence wins even when a weaker match exists too")
     void identityBeatsContextWhenBothWouldMatch() {
         String snippet = "return order.normalise();";
-        Fingerprints withSymbol = fp("java:S2259", "OrderService.java", "OrderService#find", snippet);
+        Fingerprints withSymbol =
+                fp("java:S2259", "OrderService.java", "OrderService#find", snippet);
 
         PreviousIssueCandidate viaIdentityAndContext = previous(1, 12, withSymbol);
         IncomingFinding c = current(0, 12, withSymbol);
@@ -93,7 +100,8 @@ class IssueMatcherTest {
     // ---------------------------------------------------------------------------------------
 
     @Test
-    @DisplayName("falls back to weak_fp within the line-proximity window when neither stronger rung applies")
+    @DisplayName(
+            "falls back to weak_fp within the line-proximity window when neither stronger rung applies")
     void fallsBackToWeakFingerprintWithinProximity() {
         Fingerprints beforeFp = fp("java:S3649", "PaymentService.java", null, null);
         Fingerprints afterFp = fp("java:S3649", "PaymentService.java", null, null);
@@ -108,7 +116,8 @@ class IssueMatcherTest {
     }
 
     @Test
-    @DisplayName("weak_fp respects the proximity boundary exactly: one line beyond it never matches")
+    @DisplayName(
+            "weak_fp respects the proximity boundary exactly: one line beyond it never matches")
     void weakFingerprintRespectsTheProximityBoundary() {
         Fingerprints beforeFp = fp("java:S3649", "PaymentService.java", null, null);
         Fingerprints afterFp = fp("java:S3649", "PaymentService.java", null, null);
@@ -124,38 +133,44 @@ class IssueMatcherTest {
     }
 
     @Test
-    @DisplayName("§3.1's own worked example: a renamed method AND a renamed parameter defeats rungs 1 and 2, "
-            + "leaving rung 3 as the one that actually resolves it")
+    @DisplayName(
+            "§3.1's own worked example: a renamed method AND a renamed parameter defeats rungs 1 and 2, "
+                    + "leaving rung 3 as the one that actually resolves it")
     void resolvesTheArchitectureDocsWorkedExampleViaWeakRungOnly() {
         // Run 1, commit a1b2c3, PaymentService.java line 42:
         //   public void refund(Order o) {
         //       String sql = "SELECT * FROM refunds WHERE id = " + o.getId();
-        Fingerprints run1 = fp(
-                "java:S3649",
-                "PaymentService.java",
-                "com.acme.PaymentService#refund",
-                "String sql = \"SELECT * FROM refunds WHERE id = \" + o.getId();");
+        Fingerprints run1 =
+                fp(
+                        "java:S3649",
+                        "PaymentService.java",
+                        "com.acme.PaymentService#refund",
+                        "String sql = \"SELECT * FROM refunds WHERE id = \" + o.getId();");
 
         // Run 2, commit d4e5f6, line 58 (12 lines of added imports shifted it, well within the
         // +-25 window): the method AND its parameter were renamed.
         //   public void issueRefund(Order order) {
         //       String sql = "SELECT * FROM refunds WHERE id = " + order.getId();
-        Fingerprints run2 = fp(
-                "java:S3649",
-                "PaymentService.java",
-                "com.acme.PaymentService#issueRefund",
-                "String sql = \"SELECT * FROM refunds WHERE id = \" + order.getId();");
+        Fingerprints run2 =
+                fp(
+                        "java:S3649",
+                        "PaymentService.java",
+                        "com.acme.PaymentService#issueRefund",
+                        "String sql = \"SELECT * FROM refunds WHERE id = \" + order.getId();");
 
         // Both rungs that could theoretically survive a lesser edit are defeated by this one:
         assertThat(run1.identityFp())
-                .as("the enclosing method's own name changed, so identity_fp cannot survive this edit")
+                .as(
+                        "the enclosing method's own name changed, so identity_fp cannot survive this edit")
                 .isNotEqualTo(run2.identityFp());
         assertThat(run1.contextFp())
-                .as("the flagged line's own text changed (o -> order), which is exactly what context_fp "
-                        + "does not tolerate (§3.2's own \"breaks on\" column)")
+                .as(
+                        "the flagged line's own text changed (o -> order), which is exactly what context_fp "
+                                + "does not tolerate (§3.2's own \"breaks on\" column)")
                 .isNotEqualTo(run2.contextFp());
         assertThat(run1.weakFp())
-                .as("rule id and file path are untouched, so weak_fp is unaffected by either rename")
+                .as(
+                        "rule id and file path are untouched, so weak_fp is unaffected by either rename")
                 .isEqualTo(run2.weakFp());
 
         PreviousIssueCandidate p = previous(1, 42, run1);
@@ -190,13 +205,15 @@ class IssueMatcherTest {
 
         assertThat(result.matches()).hasSize(1);
         assertThat(result.matches().get(0).previous())
-                .as("distance 0 beats distance 3, and between the two distance-0 candidates the lowest "
-                        + "finding id (seq=1) wins")
+                .as(
+                        "distance 0 beats distance 3, and between the two distance-0 candidates the lowest "
+                                + "finding id (seq=1) wins")
                 .isEqualTo(alsoExact);
     }
 
     @Test
-    @DisplayName("two current findings competing for the same bucket each get the closest available candidate")
+    @DisplayName(
+            "two current findings competing for the same bucket each get the closest available candidate")
     void twoCurrentFindingsSplitACommonBucket() {
         Fingerprints sharedFp = fp("java:S3649", "File.java", null, null);
 
@@ -206,22 +223,26 @@ class IssueMatcherTest {
         IncomingFinding closeToTen = current(0, 11, sharedFp);
         IncomingFinding closeToTwenty = current(1, 21, sharedFp);
 
-        MatchResult result = matcher.match(List.of(atTen, atTwenty), List.of(closeToTen, closeToTwenty));
+        MatchResult result =
+                matcher.match(List.of(atTen, atTwenty), List.of(closeToTen, closeToTwenty));
 
         assertThat(result.matches()).hasSize(2);
         assertThat(result.matches())
-                .anySatisfy(m -> {
-                    assertThat(m.previous()).isEqualTo(atTen);
-                    assertThat(m.current()).isEqualTo(closeToTen);
-                })
-                .anySatisfy(m -> {
-                    assertThat(m.previous()).isEqualTo(atTwenty);
-                    assertThat(m.current()).isEqualTo(closeToTwenty);
-                });
+                .anySatisfy(
+                        m -> {
+                            assertThat(m.previous()).isEqualTo(atTen);
+                            assertThat(m.current()).isEqualTo(closeToTen);
+                        })
+                .anySatisfy(
+                        m -> {
+                            assertThat(m.previous()).isEqualTo(atTwenty);
+                            assertThat(m.current()).isEqualTo(closeToTwenty);
+                        });
     }
 
     @Test
-    @DisplayName("running the same inputs twice produces an identical matching - required for replay (§4.2)")
+    @DisplayName(
+            "running the same inputs twice produces an identical matching - required for replay (§4.2)")
     void isDeterministicAcrossRepeatedRuns() {
         Fingerprints fpA = fp("java:S3649", "A.java", "A#m", "line a");
         Fingerprints fpB = fp("java:S2259", "B.java", null, "line b");
@@ -245,7 +266,8 @@ class IssueMatcherTest {
     @Test
     @DisplayName("a finding matching no rung opens a new issue")
     void unmatchedCurrentFindingOpensANewIssue() {
-        MatchResult result = matcher.match(List.of(), List.of(current(0, 1, fp("r", "f", null, null))));
+        MatchResult result =
+                matcher.match(List.of(), List.of(current(0, 1, fp("r", "f", null, null))));
 
         assertThat(result.newIssues()).hasSize(1);
         assertThat(result.matches()).isEmpty();
@@ -273,7 +295,8 @@ class IssueMatcherTest {
     }
 
     @Test
-    @DisplayName("rejects two previous candidates for the same issue id, which would make removal ambiguous")
+    @DisplayName(
+            "rejects two previous candidates for the same issue id, which would make removal ambiguous")
     void rejectsDuplicateIssueIds() {
         UUID issueId = UUID.randomUUID();
         Fingerprints fingerprints = fp("r", "f", null, null);

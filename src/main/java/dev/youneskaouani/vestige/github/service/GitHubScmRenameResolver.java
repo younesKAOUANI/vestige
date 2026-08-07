@@ -15,8 +15,8 @@ import org.springframework.web.client.RestClientException;
  *
  * <p>Built on {@link RestClient} rather than {@code RestTemplate} - the modern synchronous client
  * Spring Framework 6.1 introduced specifically to replace it - which is also what makes this class
- * testable with {@code MockRestServiceServer.bindTo(RestClient.Builder)} without a real GitHub
- * call (see {@code GitHubScmRenameResolverTest}).
+ * testable with {@code MockRestServiceServer.bindTo(RestClient.Builder)} without a real GitHub call
+ * (see {@code GitHubScmRenameResolverTest}).
  */
 public final class GitHubScmRenameResolver implements ScmRenameResolver {
 
@@ -25,10 +25,10 @@ public final class GitHubScmRenameResolver implements ScmRenameResolver {
     private final RestClient restClient;
 
     public GitHubScmRenameResolver(RestClient.Builder builder, String token) {
-        RestClient.Builder configured = builder
-                .baseUrl("https://api.github.com")
-                .defaultHeader("Accept", "application/vnd.github+json")
-                .defaultHeader("X-GitHub-Api-Version", "2022-11-28");
+        RestClient.Builder configured =
+                builder.baseUrl("https://api.github.com")
+                        .defaultHeader("Accept", "application/vnd.github+json")
+                        .defaultHeader("X-GitHub-Api-Version", "2022-11-28");
         if (token != null && !token.isBlank()) {
             configured = configured.defaultHeader("Authorization", "Bearer " + token);
         }
@@ -36,18 +36,25 @@ public final class GitHubScmRenameResolver implements ScmRenameResolver {
     }
 
     @Override
-    public Map<String, String> renamesBetween(String owner, String repo, String baseCommitSha, String headCommitSha) {
+    public Map<String, String> renamesBetween(
+            String owner, String repo, String baseCommitSha, String headCommitSha) {
         if (baseCommitSha == null || baseCommitSha.isBlank()) {
             // Most commonly: the first run ever recorded on this branch. Nothing to compare against
             // is not an error - see the interface javadoc.
             return Map.of();
         }
         try {
-            JsonNode response = restClient
-                    .get()
-                    .uri("/repos/{owner}/{repo}/compare/{base}...{head}", owner, repo, baseCommitSha, headCommitSha)
-                    .retrieve()
-                    .body(JsonNode.class);
+            JsonNode response =
+                    restClient
+                            .get()
+                            .uri(
+                                    "/repos/{owner}/{repo}/compare/{base}...{head}",
+                                    owner,
+                                    repo,
+                                    baseCommitSha,
+                                    headCommitSha)
+                            .retrieve()
+                            .body(JsonNode.class);
             return extractRenames(response);
         } catch (RestClientException e) {
             log.warn(

@@ -35,10 +35,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 /**
  * §4.2: "{@code FOR UPDATE SKIP LOCKED} gives safe concurrent workers with no extra
  * infrastructure." This is the test that actually puts several workers on the queue at once and
- * checks the two properties that claim depends on: every job is claimed by <em>somebody</em>
- * (SKIP LOCKED never causes a runnable job to be missed), and no job is ever claimed twice (the
- * row lock genuinely excludes a second claimant, it does not merely make one wait and then also
- * succeed).
+ * checks the two properties that claim depends on: every job is claimed by <em>somebody</em> (SKIP
+ * LOCKED never causes a runnable job to be missed), and no job is ever claimed twice (the row lock
+ * genuinely excludes a second claimant, it does not merely make one wait and then also succeed).
  *
  * <p>Drives {@link JobLeaseService#claimAndLease} directly - the real production entry point a
  * worker uses to claim a job - rather than the raw repository query, so this also exercises {@link
@@ -50,23 +49,17 @@ class OutboxSkipLockedConcurrencyIT extends AbstractIntegrationTest {
     private static final int JOB_COUNT = 20;
     private static final int WORKER_COUNT = 5;
 
-    @Autowired
-    private JobLeaseService leaseService;
+    @Autowired private JobLeaseService leaseService;
 
-    @Autowired
-    private AnalysisJobRepository jobRepository;
+    @Autowired private AnalysisJobRepository jobRepository;
 
-    @Autowired
-    private OrganizationRepository organizationRepository;
+    @Autowired private OrganizationRepository organizationRepository;
 
-    @Autowired
-    private ProjectRepository projectRepository;
+    @Autowired private ProjectRepository projectRepository;
 
-    @Autowired
-    private BranchRepository branchRepository;
+    @Autowired private BranchRepository branchRepository;
 
-    @Autowired
-    private AnalysisRunRepository analysisRunRepository;
+    @Autowired private AnalysisRunRepository analysisRunRepository;
 
     @AfterEach
     void clearTenant() {
@@ -74,7 +67,8 @@ class OutboxSkipLockedConcurrencyIT extends AbstractIntegrationTest {
     }
 
     @Test
-    @DisplayName("concurrent workers claim every runnable job exactly once, none twice, none missed")
+    @DisplayName(
+            "concurrent workers claim every runnable job exactly once, none twice, none missed")
     void concurrentWorkersClaimEveryJobExactlyOnce() throws Exception {
         SeededJobs seededJobs = seedRunnableJobs(JOB_COUNT);
         Set<UUID> seeded = new HashSet<>(seededJobs.jobIds());
@@ -97,13 +91,17 @@ class OutboxSkipLockedConcurrencyIT extends AbstractIntegrationTest {
         assertThat(claimed).doesNotHaveDuplicates();
         assertThat(new HashSet<>(claimed)).isEqualTo(seeded);
 
-        // Every seeded job actually reflects one lease attempt, not just a returned id. Reading these
-        // back needs the seeding organisation's own tenant context again - the worker escalation the
+        // Every seeded job actually reflects one lease attempt, not just a returned id. Reading
+        // these
+        // back needs the seeding organisation's own tenant context again - the worker escalation
+        // the
         // claims themselves used only ever grants access to the queue tables, never to reading them
         // back by id the ordinary way.
         TenantContext.set(seededJobs.organizationId());
         List<AnalysisJob> jobs = jobRepository.findAllById(seeded);
-        assertThat(jobs).hasSize(JOB_COUNT).allSatisfy(job -> assertThat(job.getAttemptCount()).isEqualTo(1));
+        assertThat(jobs)
+                .hasSize(JOB_COUNT)
+                .allSatisfy(job -> assertThat(job.getAttemptCount()).isEqualTo(1));
     }
 
     /** One worker's loop: claim until nothing is left to claim. */
@@ -117,8 +115,7 @@ class OutboxSkipLockedConcurrencyIT extends AbstractIntegrationTest {
         }
     }
 
-    private record SeededJobs(UUID organizationId, List<UUID> jobIds) {
-    }
+    private record SeededJobs(UUID organizationId, List<UUID> jobIds) {}
 
     private SeededJobs seedRunnableJobs(int count) {
         UUID organizationId = UUID.randomUUID();
@@ -127,26 +124,46 @@ class OutboxSkipLockedConcurrencyIT extends AbstractIntegrationTest {
             Instant now = Instant.now();
             String slug = "skiplocked-" + organizationId;
             organizationRepository.save(new Organization(organizationId, slug, slug, now));
-            Project project = projectRepository.save(
-                    new Project(UUID.randomUUID(), organizationId, "github", "acme", slug, "main", now));
-            Branch branch = branchRepository.save(
-                    new Branch(UUID.randomUUID(), organizationId, project.getId(), "main", true, now));
+            Project project =
+                    projectRepository.save(
+                            new Project(
+                                    UUID.randomUUID(),
+                                    organizationId,
+                                    "github",
+                                    "acme",
+                                    slug,
+                                    "main",
+                                    now));
+            Branch branch =
+                    branchRepository.save(
+                            new Branch(
+                                    UUID.randomUUID(),
+                                    organizationId,
+                                    project.getId(),
+                                    "main",
+                                    true,
+                                    now));
 
             List<UUID> jobIds = new ArrayList<>(count);
             for (int i = 0; i < count; i++) {
-                AnalysisRun run = analysisRunRepository.save(new AnalysisRun(
-                        UUID.randomUUID(),
-                        organizationId,
-                        project.getId(),
-                        branch.getId(),
-                        "commit-" + i,
-                        null,
-                        "ESLint",
-                        "8.0.0",
-                        "digest-" + i,
-                        null,
-                        now));
-                AnalysisJob job = jobRepository.save(new AnalysisJob(UUID.randomUUID(), organizationId, run.getId(), now));
+                AnalysisRun run =
+                        analysisRunRepository.save(
+                                new AnalysisRun(
+                                        UUID.randomUUID(),
+                                        organizationId,
+                                        project.getId(),
+                                        branch.getId(),
+                                        "commit-" + i,
+                                        null,
+                                        "ESLint",
+                                        "8.0.0",
+                                        "digest-" + i,
+                                        null,
+                                        now));
+                AnalysisJob job =
+                        jobRepository.save(
+                                new AnalysisJob(
+                                        UUID.randomUUID(), organizationId, run.getId(), now));
                 jobIds.add(job.getId());
             }
             return new SeededJobs(organizationId, jobIds);

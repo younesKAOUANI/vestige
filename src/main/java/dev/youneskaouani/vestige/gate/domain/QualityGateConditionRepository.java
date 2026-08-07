@@ -8,6 +8,9 @@ public interface QualityGateConditionRepository extends JpaRepository<QualityGat
 
     List<QualityGateCondition> findAllByQualityGateIdOrderByPosition(UUID qualityGateId);
 
-    /** {@code PUT /api/v1/projects/{id}/gate} replaces a gate's conditions wholesale - see GateConfigService. */
+    /**
+     * {@code PUT /api/v1/projects/{id}/gate} replaces a gate's conditions wholesale - see
+     * GateConfigService.
+     */
     void deleteAllByQualityGateId(UUID qualityGateId);
 }

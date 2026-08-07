@@ -17,8 +17,8 @@ import dev.youneskaouani.vestige.matching.Fingerprints;
  * @param message human-readable text for the UI; the rule id when the result supplied none
  * @param filePath the flagged file, exactly as reported (or resolved from an artifact index) -
  *     normalised later, at fingerprint time, not here
- * @param symbolPath the first {@code logicalLocations[].fullyQualifiedName} on the result's
- *     primary location, or {@code null} when the analyser did not supply one
+ * @param symbolPath the first {@code logicalLocations[].fullyQualifiedName} on the result's primary
+ *     location, or {@code null} when the analyser did not supply one
  * @param startLine 1-based; SARIF permits omitting the region entirely, in which case this is 1
  * @param endLine defaults to {@code startLine} when the analyser did not supply one
  * @param startColumn 0 when not reported
@@ -38,5 +38,4 @@ public record RawFinding(
         int startColumn,
         int endColumn,
         String lineSnippet,
-        Fingerprints fingerprints) {
-}
+        Fingerprints fingerprints) {}

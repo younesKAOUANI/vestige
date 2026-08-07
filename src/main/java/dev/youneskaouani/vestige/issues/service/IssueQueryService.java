@@ -34,17 +34,23 @@ public class IssueQueryService {
 
     @Transactional(readOnly = true)
     public Page<Issue> search(
-            UUID projectId, IssueStatus status, Severity severity, String ruleId, UUID sinceRunId, Pageable pageable) {
+            UUID projectId,
+            IssueStatus status,
+            Severity severity,
+            String ruleId,
+            UUID sinceRunId,
+            Pageable pageable) {
         Instant since = sinceRunId == null ? null : sinceRunCreatedAt(sinceRunId);
 
         // Specification.where(...).and(...) tolerates a null operand at every step (each factory
         // above returns null for "no filter") - see IssueSpecifications' own javadoc, which this
         // relies on rather than a Specification.allOf(...) helper whose presence varies by version.
-        Specification<Issue> spec = Specification.where(IssueSpecifications.projectId(projectId))
-                .and(IssueSpecifications.status(status))
-                .and(IssueSpecifications.severity(severity))
-                .and(IssueSpecifications.ruleId(ruleId))
-                .and(IssueSpecifications.updatedSince(since));
+        Specification<Issue> spec =
+                Specification.where(IssueSpecifications.projectId(projectId))
+                        .and(IssueSpecifications.status(status))
+                        .and(IssueSpecifications.severity(severity))
+                        .and(IssueSpecifications.ruleId(ruleId))
+                        .and(IssueSpecifications.updatedSince(since));
 
         return issueRepository.findAll(spec, pageable);
     }

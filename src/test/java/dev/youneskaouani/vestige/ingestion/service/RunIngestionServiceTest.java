@@ -45,48 +45,68 @@ class RunIngestionServiceTest {
     private static final UUID ORG_ID = UUID.randomUUID();
     private static final Instant NOW = Instant.parse("2026-01-01T00:00:00Z");
 
-    @Mock
-    private SarifReader sarifReader;
+    @Mock private SarifReader sarifReader;
 
-    @Mock
-    private ProjectRepository projectRepository;
+    @Mock private ProjectRepository projectRepository;
 
-    @Mock
-    private BranchRepository branchRepository;
+    @Mock private BranchRepository branchRepository;
 
-    @Mock
-    private AnalysisRunRepository runRepository;
+    @Mock private AnalysisRunRepository runRepository;
 
-    @Mock
-    private AnalysisReportPayloadRepository payloadRepository;
+    @Mock private AnalysisReportPayloadRepository payloadRepository;
 
-    @Mock
-    private AnalysisJobRepository jobRepository;
+    @Mock private AnalysisJobRepository jobRepository;
 
     private RunIngestionService service;
 
     @BeforeEach
     void setUp() {
-        VestigeProperties properties = new VestigeProperties(
-                new VestigeProperties.Ingestion(DataSize.ofMegabytes(200), 1000), null, null, null);
-        service = new RunIngestionService(
-                sarifReader, projectRepository, branchRepository, runRepository, payloadRepository, jobRepository, properties);
+        VestigeProperties properties =
+                new VestigeProperties(
+                        new VestigeProperties.Ingestion(DataSize.ofMegabytes(200), 1000),
+                        null,
+                        null,
+                        null);
+        service =
+                new RunIngestionService(
+                        sarifReader,
+                        projectRepository,
+                        branchRepository,
+                        runRepository,
+                        payloadRepository,
+                        jobRepository,
+                        properties);
     }
 
     @Test
-    @DisplayName("a brand-new submission creates the project and branch, queues a job, and is Accepted")
+    @DisplayName(
+            "a brand-new submission creates the project and branch, queues a job, and is Accepted")
     void acceptsANewSubmissionAndQueuesAJob() {
-        when(sarifReader.peekToolIdentity(SARIF)).thenReturn(new SarifReader.ToolIdentity("ESLint", "8.0.0"));
+        when(sarifReader.peekToolIdentity(SARIF))
+                .thenReturn(new SarifReader.ToolIdentity("ESLint", "8.0.0"));
         when(projectRepository.findByProviderAndOwnerAndName("github", "acme", "widgets"))
                 .thenReturn(Optional.empty());
         when(projectRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
-        when(branchRepository.findByProjectIdAndName(any(), eq("main"))).thenReturn(Optional.empty());
+        when(branchRepository.findByProjectIdAndName(any(), eq("main")))
+                .thenReturn(Optional.empty());
         when(branchRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
-        // Neither the idempotency-key nor the natural-key lookup is stubbed: Mockito's default answer
-        // for an Optional-returning method is Optional.empty(), which is exactly "no prior run" here.
+        // Neither the idempotency-key nor the natural-key lookup is stubbed: Mockito's default
+        // answer
+        // for an Optional-returning method is Optional.empty(), which is exactly "no prior run"
+        // here.
 
-        RunIngestionService.SubmissionResult result = service.submit(
-                ORG_ID, "github", "acme", "widgets", "main", "commit123", null, null, SARIF, NOW);
+        RunIngestionService.SubmissionResult result =
+                service.submit(
+                        ORG_ID,
+                        "github",
+                        "acme",
+                        "widgets",
+                        "main",
+                        "commit123",
+                        null,
+                        null,
+                        SARIF,
+                        NOW);
 
         assertThat(result).isInstanceOf(RunIngestionService.SubmissionResult.Accepted.class);
         AnalysisRun run = result.run();
@@ -104,13 +124,25 @@ class RunIngestionServiceTest {
     @Test
     @DisplayName("a new project's default branch becomes whichever branch it was first analysed on")
     void firstSubmissionSeedsTheProjectsDefaultBranch() {
-        when(sarifReader.peekToolIdentity(SARIF)).thenReturn(new SarifReader.ToolIdentity("ESLint", "8.0.0"));
-        when(projectRepository.findByProviderAndOwnerAndName(any(), any(), any())).thenReturn(Optional.empty());
+        when(sarifReader.peekToolIdentity(SARIF))
+                .thenReturn(new SarifReader.ToolIdentity("ESLint", "8.0.0"));
+        when(projectRepository.findByProviderAndOwnerAndName(any(), any(), any()))
+                .thenReturn(Optional.empty());
         when(projectRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
         when(branchRepository.findByProjectIdAndName(any(), any())).thenReturn(Optional.empty());
         when(branchRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
-        service.submit(ORG_ID, "github", "acme", "widgets", "develop", "commit123", null, null, SARIF, NOW);
+        service.submit(
+                ORG_ID,
+                "github",
+                "acme",
+                "widgets",
+                "develop",
+                "commit123",
+                null,
+                null,
+                SARIF,
+                NOW);
 
         ArgumentCaptor<Project> projectCaptor = ArgumentCaptor.forClass(Project.class);
         verify(projectRepository).save(projectCaptor.capture());
@@ -122,22 +154,46 @@ class RunIngestionServiceTest {
     }
 
     @Test
-    @DisplayName("a repeated Idempotency-Key with the same body returns the original run, unprocessed again")
+    @DisplayName(
+            "a repeated Idempotency-Key with the same body returns the original run, unprocessed again")
     void returnsTheOriginalRunOnAnIdenticalRepeat() {
         UUID projectId = UUID.randomUUID();
         UUID branchId = UUID.randomUUID();
-        AnalysisRun existing = new AnalysisRun(
-                UUID.randomUUID(), ORG_ID, projectId, branchId, "commit123", null, "ESLint", "8.0.0",
-                reportDigestOf(SARIF), "client-key", NOW);
+        AnalysisRun existing =
+                new AnalysisRun(
+                        UUID.randomUUID(),
+                        ORG_ID,
+                        projectId,
+                        branchId,
+                        "commit123",
+                        null,
+                        "ESLint",
+                        "8.0.0",
+                        reportDigestOf(SARIF),
+                        "client-key",
+                        NOW);
 
-        when(sarifReader.peekToolIdentity(SARIF)).thenReturn(new SarifReader.ToolIdentity("ESLint", "8.0.0"));
+        when(sarifReader.peekToolIdentity(SARIF))
+                .thenReturn(new SarifReader.ToolIdentity("ESLint", "8.0.0"));
         when(projectRepository.findByProviderAndOwnerAndName(any(), any(), any()))
                 .thenReturn(Optional.of(projectWith(projectId)));
-        when(branchRepository.findByProjectIdAndName(any(), any())).thenReturn(Optional.of(branchWith(branchId)));
-        when(runRepository.findByOrganizationIdAndIdempotencyKey(ORG_ID, "client-key")).thenReturn(Optional.of(existing));
+        when(branchRepository.findByProjectIdAndName(any(), any()))
+                .thenReturn(Optional.of(branchWith(branchId)));
+        when(runRepository.findByOrganizationIdAndIdempotencyKey(ORG_ID, "client-key"))
+                .thenReturn(Optional.of(existing));
 
-        RunIngestionService.SubmissionResult result = service.submit(
-                ORG_ID, "github", "acme", "widgets", "main", "commit123", null, "client-key", SARIF, NOW);
+        RunIngestionService.SubmissionResult result =
+                service.submit(
+                        ORG_ID,
+                        "github",
+                        "acme",
+                        "widgets",
+                        "main",
+                        "commit123",
+                        null,
+                        "client-key",
+                        SARIF,
+                        NOW);
 
         assertThat(result).isInstanceOf(RunIngestionService.SubmissionResult.Duplicate.class);
         assertThat(result.run()).isSameAs(existing);
@@ -146,22 +202,47 @@ class RunIngestionServiceTest {
     }
 
     @Test
-    @DisplayName("a repeated Idempotency-Key with a different body is a 409, not a silent overwrite")
+    @DisplayName(
+            "a repeated Idempotency-Key with a different body is a 409, not a silent overwrite")
     void rejectsAnIdempotencyKeyReusedForADifferentReport() {
         UUID projectId = UUID.randomUUID();
         UUID branchId = UUID.randomUUID();
-        AnalysisRun existing = new AnalysisRun(
-                UUID.randomUUID(), ORG_ID, projectId, branchId, "commit123", null, "ESLint", "8.0.0",
-                "a-completely-different-digest", "client-key", NOW);
+        AnalysisRun existing =
+                new AnalysisRun(
+                        UUID.randomUUID(),
+                        ORG_ID,
+                        projectId,
+                        branchId,
+                        "commit123",
+                        null,
+                        "ESLint",
+                        "8.0.0",
+                        "a-completely-different-digest",
+                        "client-key",
+                        NOW);
 
-        when(sarifReader.peekToolIdentity(SARIF)).thenReturn(new SarifReader.ToolIdentity("ESLint", "8.0.0"));
+        when(sarifReader.peekToolIdentity(SARIF))
+                .thenReturn(new SarifReader.ToolIdentity("ESLint", "8.0.0"));
         when(projectRepository.findByProviderAndOwnerAndName(any(), any(), any()))
                 .thenReturn(Optional.of(projectWith(projectId)));
-        when(branchRepository.findByProjectIdAndName(any(), any())).thenReturn(Optional.of(branchWith(branchId)));
-        when(runRepository.findByOrganizationIdAndIdempotencyKey(ORG_ID, "client-key")).thenReturn(Optional.of(existing));
+        when(branchRepository.findByProjectIdAndName(any(), any()))
+                .thenReturn(Optional.of(branchWith(branchId)));
+        when(runRepository.findByOrganizationIdAndIdempotencyKey(ORG_ID, "client-key"))
+                .thenReturn(Optional.of(existing));
 
-        assertThatThrownBy(() -> service.submit(
-                        ORG_ID, "github", "acme", "widgets", "main", "commit123", null, "client-key", SARIF, NOW))
+        assertThatThrownBy(
+                        () ->
+                                service.submit(
+                                        ORG_ID,
+                                        "github",
+                                        "acme",
+                                        "widgets",
+                                        "main",
+                                        "commit123",
+                                        null,
+                                        "client-key",
+                                        SARIF,
+                                        NOW))
                 .isInstanceOf(Problems.Conflict.class);
     }
 
@@ -169,27 +250,64 @@ class RunIngestionServiceTest {
     @DisplayName("a report over the configured ceiling is 413, before anything is parsed")
     void rejectsAnOversizedReport() {
         VestigeProperties tinyLimit =
-                new VestigeProperties(new VestigeProperties.Ingestion(DataSize.ofBytes(4), 1000), null, null, null);
-        RunIngestionService tightService = new RunIngestionService(
-                sarifReader, projectRepository, branchRepository, runRepository, payloadRepository, jobRepository, tinyLimit);
+                new VestigeProperties(
+                        new VestigeProperties.Ingestion(DataSize.ofBytes(4), 1000),
+                        null,
+                        null,
+                        null);
+        RunIngestionService tightService =
+                new RunIngestionService(
+                        sarifReader,
+                        projectRepository,
+                        branchRepository,
+                        runRepository,
+                        payloadRepository,
+                        jobRepository,
+                        tinyLimit);
 
-        assertThatThrownBy(() -> tightService.submit(
-                        ORG_ID, "github", "acme", "widgets", "main", "commit123", null, null, SARIF, NOW))
+        assertThatThrownBy(
+                        () ->
+                                tightService.submit(
+                                        ORG_ID,
+                                        "github",
+                                        "acme",
+                                        "widgets",
+                                        "main",
+                                        "commit123",
+                                        null,
+                                        null,
+                                        SARIF,
+                                        NOW))
                 .isInstanceOf(Problems.PayloadTooLarge.class);
     }
 
     @Test
     @DisplayName("an empty body is rejected before the SARIF reader is even asked to look at it")
     void rejectsAnEmptyBody() {
-        assertThatThrownBy(() -> service.submit(
-                        ORG_ID, "github", "acme", "widgets", "main", "commit123", null, null, new byte[0], NOW))
+        assertThatThrownBy(
+                        () ->
+                                service.submit(
+                                        ORG_ID,
+                                        "github",
+                                        "acme",
+                                        "widgets",
+                                        "main",
+                                        "commit123",
+                                        null,
+                                        null,
+                                        new byte[0],
+                                        NOW))
                 .isInstanceOf(Problems.BadRequest.class);
     }
 
     @Test
     @DisplayName("a blank required field is rejected before any repository is touched")
     void rejectsAMissingCommitSha() {
-        assertThatThrownBy(() -> service.submit(ORG_ID, "github", "acme", "widgets", "main", " ", null, null, SARIF, NOW))
+        assertThatThrownBy(
+                        () ->
+                                service.submit(
+                                        ORG_ID, "github", "acme", "widgets", "main", " ", null,
+                                        null, SARIF, NOW))
                 .isInstanceOf(Problems.BadRequest.class);
     }
 

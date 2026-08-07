@@ -32,9 +32,11 @@ class TriageEventPrecisionTest {
 
     @ParameterizedTest(name = "sub-microsecond remainder of {0}ns survives the round trip")
     @ValueSource(ints = {0, 1, 499, 500, 501, 999})
-    @DisplayName("the hashed payload ignores precision the database cannot store, on both sides of 500ns")
+    @DisplayName(
+            "the hashed payload ignores precision the database cannot store, on both sides of 500ns")
     void payloadIsStableAcrossPrecisionTheStoreCannotKeep(int subMicrosecondNanos) {
-        Instant precise = Instant.parse("2026-01-01T00:00:00Z").plusNanos(123_456_000L + subMicrosecondNanos);
+        Instant precise =
+                Instant.parse("2026-01-01T00:00:00Z").plusNanos(123_456_000L + subMicrosecondNanos);
         Instant asStored = precise.truncatedTo(ChronoUnit.MICROS);
 
         assertThat(payloadOf(precise)).isEqualTo(payloadOf(asStored));
@@ -42,7 +44,8 @@ class TriageEventPrecisionTest {
     }
 
     @Test
-    @DisplayName("a constructed event holds an occurredAt PostgreSQL can round-trip without rounding")
+    @DisplayName(
+            "a constructed event holds an occurredAt PostgreSQL can round-trip without rounding")
     void constructorNormalisesOccurredAtToMicroseconds() {
         Instant precise = Instant.parse("2026-01-01T00:00:00Z").plusNanos(123_456_789L);
 
@@ -57,28 +60,41 @@ class TriageEventPrecisionTest {
      * precision the database keeps, and re-hash it as {@code AuditChainVerifier} does.
      */
     @Test
-    @DisplayName("re-hashing an event after a microsecond round trip reproduces the original entry hash")
+    @DisplayName(
+            "re-hashing an event after a microsecond round trip reproduces the original entry hash")
     void rehashingAfterAStoreRoundTripMatches() {
         Instant precise = Instant.parse("2026-01-01T00:00:00Z").plusNanos(123_456_789L);
         TriageEvent appended = eventAt(precise);
 
-        String atAppendTime = HashChain.entryHash(HashChain.GENESIS_HASH, appended.canonicalPayload());
+        String atAppendTime =
+                HashChain.entryHash(HashChain.GENESIS_HASH, appended.canonicalPayload());
         String afterRoundTrip =
-                HashChain.entryHash(HashChain.GENESIS_HASH, eventAt(appended.getOccurredAt()).canonicalPayload());
+                HashChain.entryHash(
+                        HashChain.GENESIS_HASH,
+                        eventAt(appended.getOccurredAt()).canonicalPayload());
 
         assertThat(afterRoundTrip).isEqualTo(atAppendTime);
     }
 
     private static Object payloadOf(Instant occurredAt) {
         return TriageEvent.canonicalPayload(
-                ISSUE_ID, "younes", IssueStatus.OPEN, IssueStatus.RESOLVED_WONT_FIX, "accepted risk", occurredAt);
+                ISSUE_ID,
+                "younes",
+                IssueStatus.OPEN,
+                IssueStatus.RESOLVED_WONT_FIX,
+                "accepted risk",
+                occurredAt);
     }
 
     private static String hashOf(Instant occurredAt) {
         return HashChain.entryHash(
                 HashChain.GENESIS_HASH,
                 TriageEvent.canonicalPayload(
-                        ISSUE_ID, "younes", IssueStatus.OPEN, IssueStatus.RESOLVED_WONT_FIX, "accepted risk",
+                        ISSUE_ID,
+                        "younes",
+                        IssueStatus.OPEN,
+                        IssueStatus.RESOLVED_WONT_FIX,
+                        "accepted risk",
                         occurredAt));
     }
 

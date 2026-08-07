@@ -11,5 +11,5 @@ import jakarta.validation.constraints.NotNull;
  *
  * @param actor caller-supplied, unverified - see {@code TriageEvent}'s class javadoc
  */
-public record TriagePatchRequest(@NotNull IssueStatus status, @NotBlank String actor, String justification) {
-}
+public record TriagePatchRequest(
+        @NotNull IssueStatus status, @NotBlank String actor, String justification) {}

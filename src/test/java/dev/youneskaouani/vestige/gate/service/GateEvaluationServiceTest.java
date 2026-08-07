@@ -1,7 +1,6 @@
 package dev.youneskaouani.vestige.gate.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -32,7 +31,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
  * (dependency-free, part of {@code scripts/offline-verify.sh}'s core); this class instead checks
  * the persistence wrapping around it - that {@code GateConfigService}'s definition is what actually
  * gets evaluated, and that what commits to {@code quality_gate_evaluation} matches what the caller
- * gets back, using a real {@link ObjectMapper} rather than mocking Jackson's well-defined behaviour.
+ * gets back, using a real {@link ObjectMapper} rather than mocking Jackson's well-defined
+ * behaviour.
  */
 @ExtendWith(MockitoExtension.class)
 class GateEvaluationServiceTest {
@@ -42,32 +42,36 @@ class GateEvaluationServiceTest {
     private static final UUID RUN_ID = UUID.randomUUID();
     private static final Instant NOW = Instant.parse("2026-01-01T00:00:00Z");
 
-    @Mock
-    private GateConfigService gateConfigService;
+    @Mock private GateConfigService gateConfigService;
 
-    @Mock
-    private QualityGateEvaluationRepository evaluationRepository;
+    @Mock private QualityGateEvaluationRepository evaluationRepository;
 
     private GateEvaluationService service;
 
     @BeforeEach
     void setUp() {
-        service = new GateEvaluationService(gateConfigService, evaluationRepository, new ObjectMapper());
+        service =
+                new GateEvaluationService(
+                        gateConfigService, evaluationRepository, new ObjectMapper());
     }
 
     @Test
-    @DisplayName("§7: a new CRITICAL issue fails the default gate's NEW_CRITICAL_ISSUES=0 condition")
+    @DisplayName(
+            "§7: a new CRITICAL issue fails the default gate's NEW_CRITICAL_ISSUES=0 condition")
     void failsTheGateOnANewCriticalIssue() {
         when(gateConfigService.getGate(PROJECT_ID)).thenReturn(QualityGateDefinition.defaultGate());
         GateInput.GateIssue newCritical =
-                new GateInput.GateIssue("issue-1", Severity.CRITICAL, IssueStatus.OPEN, true, false);
+                new GateInput.GateIssue(
+                        "issue-1", Severity.CRITICAL, IssueStatus.OPEN, true, false);
 
-        GateOutcome outcome = service.evaluate(ORG_ID, PROJECT_ID, RUN_ID, List.of(newCritical), NOW);
+        GateOutcome outcome =
+                service.evaluate(ORG_ID, PROJECT_ID, RUN_ID, List.of(newCritical), NOW);
 
         assertThat(outcome.status()).isEqualTo(GateStatus.FAIL);
         assertThat(outcome.gateName()).isEqualTo("Vestige default");
 
-        ArgumentCaptor<QualityGateEvaluation> captor = ArgumentCaptor.forClass(QualityGateEvaluation.class);
+        ArgumentCaptor<QualityGateEvaluation> captor =
+                ArgumentCaptor.forClass(QualityGateEvaluation.class);
         verify(evaluationRepository).save(captor.capture());
         QualityGateEvaluation saved = captor.getValue();
         assertThat(saved.getOrganizationId()).isEqualTo(ORG_ID);
@@ -92,7 +96,8 @@ class GateEvaluationServiceTest {
         GateOutcome outcome = service.evaluate(ORG_ID, PROJECT_ID, RUN_ID, List.of(), NOW);
 
         assertThat(outcome.status()).isEqualTo(GateStatus.PASS);
-        ArgumentCaptor<QualityGateEvaluation> captor = ArgumentCaptor.forClass(QualityGateEvaluation.class);
+        ArgumentCaptor<QualityGateEvaluation> captor =
+                ArgumentCaptor.forClass(QualityGateEvaluation.class);
         verify(evaluationRepository).save(captor.capture());
         assertThat(captor.getValue().getStatus()).isEqualTo(GateStatus.PASS);
         assertThat(captor.getValue().getResultJson()).contains("\"status\":\"PASS\"");
@@ -102,8 +107,9 @@ class GateEvaluationServiceTest {
     @DisplayName("a silenced issue (won't-fix / false-positive) never counts against the gate")
     void ignoresIssuesTriagedAwayEvenWhenNewAndCritical() {
         when(gateConfigService.getGate(PROJECT_ID)).thenReturn(QualityGateDefinition.defaultGate());
-        GateInput.GateIssue silenced = new GateInput.GateIssue(
-                "issue-1", Severity.CRITICAL, IssueStatus.RESOLVED_WONT_FIX, true, false);
+        GateInput.GateIssue silenced =
+                new GateInput.GateIssue(
+                        "issue-1", Severity.CRITICAL, IssueStatus.RESOLVED_WONT_FIX, true, false);
 
         GateOutcome outcome = service.evaluate(ORG_ID, PROJECT_ID, RUN_ID, List.of(silenced), NOW);
 
@@ -114,12 +120,16 @@ class GateEvaluationServiceTest {
     @DisplayName("evaluates against whatever GateConfigService resolves, not a hardcoded default")
     void evaluatesAgainstTheProjectsActualConfiguredGate() {
         when(gateConfigService.getGate(PROJECT_ID))
-                .thenReturn(new QualityGateDefinition(
-                        "Lenient", List.of(new GateCondition(ConditionType.NEW_CRITICAL_ISSUES, 10))));
+                .thenReturn(
+                        new QualityGateDefinition(
+                                "Lenient",
+                                List.of(new GateCondition(ConditionType.NEW_CRITICAL_ISSUES, 10))));
         GateInput.GateIssue newCritical =
-                new GateInput.GateIssue("issue-1", Severity.CRITICAL, IssueStatus.OPEN, true, false);
+                new GateInput.GateIssue(
+                        "issue-1", Severity.CRITICAL, IssueStatus.OPEN, true, false);
 
-        GateOutcome outcome = service.evaluate(ORG_ID, PROJECT_ID, RUN_ID, List.of(newCritical), NOW);
+        GateOutcome outcome =
+                service.evaluate(ORG_ID, PROJECT_ID, RUN_ID, List.of(newCritical), NOW);
 
         assertThat(outcome.gateName()).isEqualTo("Lenient");
         assertThat(outcome.status()).isEqualTo(GateStatus.PASS);

@@ -12,8 +12,7 @@ import java.util.UUID;
 @Table(name = "organization")
 public class Organization {
 
-    @Id
-    private UUID id;
+    @Id private UUID id;
 
     @Column(nullable = false, unique = true)
     private String slug;

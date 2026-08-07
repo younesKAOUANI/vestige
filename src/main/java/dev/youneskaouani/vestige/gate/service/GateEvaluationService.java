@@ -39,19 +39,24 @@ public class GateEvaluationService {
 
     @Transactional
     public GateOutcome evaluate(
-            UUID organizationId, UUID projectId, UUID runId, List<GateInput.GateIssue> gateIssues, Instant now) {
+            UUID organizationId,
+            UUID projectId,
+            UUID runId,
+            List<GateInput.GateIssue> gateIssues,
+            Instant now) {
         QualityGateDefinition definition = gateConfigService.getGate(projectId);
         GateOutcome outcome = evaluator.evaluate(definition, new GateInput(gateIssues));
 
-        evaluationRepository.save(new QualityGateEvaluation(
-                UUID.randomUUID(),
-                organizationId,
-                projectId,
-                runId,
-                outcome.gateName(),
-                outcome.status(),
-                writeJson(outcome),
-                now));
+        evaluationRepository.save(
+                new QualityGateEvaluation(
+                        UUID.randomUUID(),
+                        organizationId,
+                        projectId,
+                        runId,
+                        outcome.gateName(),
+                        outcome.status(),
+                        writeJson(outcome),
+                        now));
         return outcome;
     }
 

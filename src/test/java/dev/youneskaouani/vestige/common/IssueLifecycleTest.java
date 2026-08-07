@@ -16,29 +16,35 @@ class IssueLifecycleTest {
     @DisplayName("an open issue that is sighted again stays open")
     void sightingKeepsAnOpenIssueOpen() {
         assertThat(IssueLifecycle.afterSighting(IssueStatus.OPEN)).isEqualTo(IssueStatus.OPEN);
-        assertThat(IssueLifecycle.afterSighting(IssueStatus.REOPENED)).isEqualTo(IssueStatus.REOPENED);
+        assertThat(IssueLifecycle.afterSighting(IssueStatus.REOPENED))
+                .isEqualTo(IssueStatus.REOPENED);
     }
 
     @Test
     @DisplayName("a fixed issue that is sighted again is reopened, not opened afresh")
     void sightingReopensAFixedIssue() {
-        assertThat(IssueLifecycle.afterSighting(IssueStatus.RESOLVED_FIXED)).isEqualTo(IssueStatus.REOPENED);
-        assertThat(IssueLifecycle.isReopening(IssueStatus.RESOLVED_FIXED, IssueStatus.REOPENED)).isTrue();
+        assertThat(IssueLifecycle.afterSighting(IssueStatus.RESOLVED_FIXED))
+                .isEqualTo(IssueStatus.REOPENED);
+        assertThat(IssueLifecycle.isReopening(IssueStatus.RESOLVED_FIXED, IssueStatus.REOPENED))
+                .isTrue();
         assertThat(IssueLifecycle.isReopening(IssueStatus.OPEN, IssueStatus.OPEN)).isFalse();
     }
 
     @Test
     @DisplayName("an outstanding issue that is no longer reported is auto-resolved as fixed")
     void disappearanceResolves() {
-        assertThat(IssueLifecycle.afterDisappearance(IssueStatus.OPEN)).isEqualTo(IssueStatus.RESOLVED_FIXED);
-        assertThat(IssueLifecycle.afterDisappearance(IssueStatus.REOPENED)).isEqualTo(IssueStatus.RESOLVED_FIXED);
+        assertThat(IssueLifecycle.afterDisappearance(IssueStatus.OPEN))
+                .isEqualTo(IssueStatus.RESOLVED_FIXED);
+        assertThat(IssueLifecycle.afterDisappearance(IssueStatus.REOPENED))
+                .isEqualTo(IssueStatus.RESOLVED_FIXED);
         assertThat(IssueLifecycle.afterDisappearance(IssueStatus.RESOLVED_FIXED))
                 .isEqualTo(IssueStatus.RESOLVED_FIXED);
     }
 
     @ParameterizedTest
     @EnumSource(names = {"RESOLVED_FALSE_POSITIVE", "RESOLVED_WONT_FIX"})
-    @DisplayName("the matcher never overwrites a human triage decision, on sighting or on disappearance")
+    @DisplayName(
+            "the matcher never overwrites a human triage decision, on sighting or on disappearance")
     void neverOverwritesAHumanDecision(IssueStatus decided) {
         assertThat(IssueLifecycle.afterSighting(decided)).isEqualTo(decided);
         assertThat(IssueLifecycle.afterDisappearance(decided)).isEqualTo(decided);

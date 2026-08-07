@@ -9,7 +9,8 @@ import java.util.List;
  * @param analyserVersion its version, used to explain a sudden change in findings
  * @param findings every usable result, in parse order, already carrying its fingerprints
  */
-public record AnalysisReport(String analyserName, String analyserVersion, List<RawFinding> findings) {
+public record AnalysisReport(
+        String analyserName, String analyserVersion, List<RawFinding> findings) {
 
     public AnalysisReport {
         findings = List.copyOf(findings);

@@ -7,8 +7,12 @@ import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
-/** {@code GET /api/v1/issues/{id}/history} (§8): every sighting, and every triage decision, oldest first. */
-public record IssueHistoryResponse(IssueResponse issue, List<Sighting> findings, List<TriageEntry> triageEvents) {
+/**
+ * {@code GET /api/v1/issues/{id}/history} (§8): every sighting, and every triage decision, oldest
+ * first.
+ */
+public record IssueHistoryResponse(
+        IssueResponse issue, List<Sighting> findings, List<TriageEntry> triageEvents) {
 
     public static IssueHistoryResponse of(IssueHistory history) {
         return new IssueHistoryResponse(

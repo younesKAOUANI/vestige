@@ -13,29 +13,28 @@ import java.util.UUID;
 /**
  * One raw result from one analyser in one run (§2.1). Immutable in the sense the architecture doc
  * means it: once written, {@code ruleId}/{@code severity}/.../{@code fingerprints} never change -
- * the only field this class ever mutates after construction is {@link #issueId}/{@link
- * #matchRung}, set exactly once by the matcher (§3.3) before the run's transaction commits.
+ * the only field this class ever mutates after construction is {@link #issueId}/{@link #matchRung},
+ * set exactly once by the matcher (§3.3) before the run's transaction commits.
  *
  * <p>{@code issueId} is nullable at the type level because a finding exists, in memory, before it
  * has been matched (§4.3: parse, then match, in the same transaction) - but no finding is ever
- * durably visible to another transaction without one, since the whole run commits atomically or
- * not at all.
+ * durably visible to another transaction without one, since the whole run commits atomically or not
+ * at all.
  */
 @Entity
 @Table(name = "finding")
 public class Finding {
 
-    @Id
-    private UUID id;
+    @Id private UUID id;
 
     /**
      * {@code seq bigint generated always as identity} - the matcher's tie-break ordinal (§3.3,
-     * "lowest finding id"). Read-only from JPA's side: the identity column is populated by
-     * Postgres on INSERT, and nothing in this codebase needs to read a finding's own {@code seq}
-     * back within the same transaction that inserted it - a {@code seq} only matters once a finding
-     * is used as a {@code PreviousIssueCandidate} in some later run, by which point it has long
-     * since been fetched fresh by a query. Mapping it {@code insertable = false, updatable = false}
-     * (rather than adding an after-insert refresh) is therefore correct, not merely convenient.
+     * "lowest finding id"). Read-only from JPA's side: the identity column is populated by Postgres
+     * on INSERT, and nothing in this codebase needs to read a finding's own {@code seq} back within
+     * the same transaction that inserted it - a {@code seq} only matters once a finding is used as
+     * a {@code PreviousIssueCandidate} in some later run, by which point it has long since been
+     * fetched fresh by a query. Mapping it {@code insertable = false, updatable = false} (rather
+     * than adding an after-insert refresh) is therefore correct, not merely convenient.
      */
     @Column(insertable = false, updatable = false)
     private Long seq;
@@ -140,7 +139,8 @@ public class Finding {
     /** Set exactly once, by the matcher, before the run's transaction commits (§4.3). */
     public void assignToIssue(UUID issueId, MatchRung matchRung) {
         if (this.issueId != null) {
-            throw new IllegalStateException("Finding " + id + " is already assigned to issue " + this.issueId);
+            throw new IllegalStateException(
+                    "Finding " + id + " is already assigned to issue " + this.issueId);
         }
         this.issueId = issueId;
         this.matchRung = matchRung;

@@ -58,26 +58,39 @@ public class RunController {
             @RequestBody byte[] sarif) {
 
         UUID organizationId = TenantContext.require();
-        RunIngestionService.SubmissionResult result = ingestionService.submit(
-                organizationId, provider, owner, repo, branch, commitSha, baseCommitSha, idempotencyKey, sarif, Instant.now());
+        RunIngestionService.SubmissionResult result =
+                ingestionService.submit(
+                        organizationId,
+                        provider,
+                        owner,
+                        repo,
+                        branch,
+                        commitSha,
+                        baseCommitSha,
+                        idempotencyKey,
+                        sarif,
+                        Instant.now());
 
-        HttpStatus status = (result instanceof RunIngestionService.SubmissionResult.Duplicate)
-                ? HttpStatus.OK
-                : HttpStatus.ACCEPTED;
+        HttpStatus status =
+                (result instanceof RunIngestionService.SubmissionResult.Duplicate)
+                        ? HttpStatus.OK
+                        : HttpStatus.ACCEPTED;
         return ResponseEntity.status(status).body(toResponse(result.run()));
     }
 
     @GetMapping("/{id}")
     public RunResponse get(@PathVariable UUID id) {
-        AnalysisRun run = runRepository.findById(id).orElseThrow(() -> new Problems.NotFound("Run", id));
+        AnalysisRun run =
+                runRepository.findById(id).orElseThrow(() -> new Problems.NotFound("Run", id));
         return toResponse(run);
     }
 
     private RunResponse toResponse(AnalysisRun run) {
-        String gateResultJson = evaluationRepository
-                .findByAnalysisRunId(run.getId())
-                .map(QualityGateEvaluation::getResultJson)
-                .orElse(null);
+        String gateResultJson =
+                evaluationRepository
+                        .findByAnalysisRunId(run.getId())
+                        .map(QualityGateEvaluation::getResultJson)
+                        .orElse(null);
         return RunResponse.of(run, gateResultJson);
     }
 }

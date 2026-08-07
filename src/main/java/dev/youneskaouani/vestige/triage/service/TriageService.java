@@ -34,8 +34,16 @@ public class TriageService {
      */
     @Transactional
     public Issue applyTriage(
-            UUID organizationId, UUID issueId, IssueStatus newStatus, String actor, String justification, Instant now) {
-        Issue issue = issueRepository.findById(issueId).orElseThrow(() -> new Problems.NotFound("Issue", issueId));
+            UUID organizationId,
+            UUID issueId,
+            IssueStatus newStatus,
+            String actor,
+            String justification,
+            Instant now) {
+        Issue issue =
+                issueRepository
+                        .findById(issueId)
+                        .orElseThrow(() -> new Problems.NotFound("Issue", issueId));
 
         if (newStatus.requiresTriage() && (justification == null || justification.isBlank())) {
             throw new Problems.BadRequest(
@@ -46,11 +54,14 @@ public class TriageService {
             throw new Problems.Conflict("Issue " + issueId + " already has status " + newStatus);
         }
 
-        // Deliberately permissive about which transitions PATCH may request - see Issue#applyTriage's
-        // own javadoc: this is also how a mistaken triage gets corrected back to OPEN, and §8 states
+        // Deliberately permissive about which transitions PATCH may request - see
+        // Issue#applyTriage's
+        // own javadoc: this is also how a mistaken triage gets corrected back to OPEN, and §8
+        // states
         // only one hard rule (the justification above), not a transition table.
         issue.applyTriage(newStatus, now);
-        appender.append(organizationId, issueId, actor, previousStatus, newStatus, justification, now);
+        appender.append(
+                organizationId, issueId, actor, previousStatus, newStatus, justification, now);
 
         return issue;
     }

@@ -12,7 +12,8 @@ import org.springframework.data.domain.Page;
  * API shape, and Spring Boot 3.3 logs a warning recommending exactly this: a small, stable,
  * hand-written response type instead.
  */
-public record PageResponse<T>(List<T> items, int page, int size, long totalElements, int totalPages) {
+public record PageResponse<T>(
+        List<T> items, int page, int size, long totalElements, int totalPages) {
 
     public static <S, T> PageResponse<T> of(Page<S> page, Function<S, T> mapper) {
         return new PageResponse<>(

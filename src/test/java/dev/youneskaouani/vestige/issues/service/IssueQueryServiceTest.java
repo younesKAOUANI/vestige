@@ -34,18 +34,17 @@ import org.springframework.data.jpa.domain.Specification;
 /**
  * Exercises the one piece of judgement in this class - resolving {@code since-run} to an instant,
  * or failing with 404 when it does not name a real run - with the actual {@code Specification}
- * composition left to {@code IssueSpecifications}' own javadoc guarantee (null-tolerant {@code and}).
+ * composition left to {@code IssueSpecifications}' own javadoc guarantee (null-tolerant {@code
+ * and}).
  */
 @ExtendWith(MockitoExtension.class)
 class IssueQueryServiceTest {
 
     private static final Instant NOW = Instant.parse("2026-01-01T00:00:00Z");
 
-    @Mock
-    private IssueRepository issueRepository;
+    @Mock private IssueRepository issueRepository;
 
-    @Mock
-    private AnalysisRunRepository runRepository;
+    @Mock private AnalysisRunRepository runRepository;
 
     private IssueQueryService service;
 
@@ -75,7 +74,8 @@ class IssueQueryServiceTest {
         UUID sinceRunId = UUID.randomUUID();
         Pageable pageable = PageRequest.of(0, 25);
         Page<Issue> expected = new PageImpl<>(List.of());
-        when(runRepository.findById(sinceRunId)).thenReturn(Optional.of(runCreatedAt(sinceRunId, NOW)));
+        when(runRepository.findById(sinceRunId))
+                .thenReturn(Optional.of(runCreatedAt(sinceRunId, NOW)));
         when(issueRepository.findAll(anySpecification(), eq(pageable))).thenReturn(expected);
 
         Page<Issue> result = service.search(projectId, null, null, null, sinceRunId, pageable);
@@ -86,7 +86,8 @@ class IssueQueryServiceTest {
     }
 
     @Test
-    @DisplayName("a since-run id that does not resolve to a real run is a 404, not a silently-ignored filter")
+    @DisplayName(
+            "a since-run id that does not resolve to a real run is a 404, not a silently-ignored filter")
     void aMissingSinceRunIsNotFound() {
         UUID projectId = UUID.randomUUID();
         UUID sinceRunId = UUID.randomUUID();
@@ -99,11 +100,11 @@ class IssueQueryServiceTest {
     }
 
     /**
-     * {@code IssueRepository} inherits {@code findAll(Specification, Pageable)} from
-     * {@link Specification}'s executor and {@code findAll(Example, Pageable)} from the
-     * query-by-example one, so a bare {@code any()} does not tell javac which overload is meant.
-     * Pinning the type parameter picks the Specification overload - which is the one the service
-     * actually calls, so the verification is no weaker for being explicit.
+     * {@code IssueRepository} inherits {@code findAll(Specification, Pageable)} from {@link
+     * Specification}'s executor and {@code findAll(Example, Pageable)} from the query-by-example
+     * one, so a bare {@code any()} does not tell javac which overload is meant. Pinning the type
+     * parameter picks the Specification overload - which is the one the service actually calls, so
+     * the verification is no weaker for being explicit.
      */
     private static Specification<Issue> anySpecification() {
         return any();

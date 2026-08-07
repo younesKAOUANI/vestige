@@ -46,11 +46,13 @@ public class ReportSizeFilter extends OncePerRequestFilter {
 
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
-        return !(PATH.equals(request.getRequestURI()) && "POST".equalsIgnoreCase(request.getMethod()));
+        return !(PATH.equals(request.getRequestURI())
+                && "POST".equalsIgnoreCase(request.getMethod()));
     }
 
     @Override
-    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain chain)
+    protected void doFilterInternal(
+            HttpServletRequest request, HttpServletResponse response, FilterChain chain)
             throws ServletException, IOException {
         long declaredLength = request.getContentLengthLong();
         if (declaredLength > maxBytes) {
@@ -60,11 +62,14 @@ public class ReportSizeFilter extends OncePerRequestFilter {
         chain.doFilter(request, response);
     }
 
-    private void writeTooLarge(HttpServletRequest request, HttpServletResponse response, long declaredLength)
+    private void writeTooLarge(
+            HttpServletRequest request, HttpServletResponse response, long declaredLength)
             throws IOException {
-        ProblemDetail problem = ProblemDetail.forStatusAndDetail(
-                HttpStatus.PAYLOAD_TOO_LARGE,
-                "Report is %d bytes, exceeding the %d byte limit".formatted(declaredLength, maxBytes));
+        ProblemDetail problem =
+                ProblemDetail.forStatusAndDetail(
+                        HttpStatus.PAYLOAD_TOO_LARGE,
+                        "Report is %d bytes, exceeding the %d byte limit"
+                                .formatted(declaredLength, maxBytes));
         problem.setType(URI.create(Problems.BASE_URI + "payload-too-large"));
         problem.setTitle(HttpStatus.PAYLOAD_TOO_LARGE.getReasonPhrase());
         problem.setInstance(URI.create(request.getRequestURI()));

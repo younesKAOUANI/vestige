@@ -46,13 +46,19 @@ public class ApiKeyAuthenticationFilter extends OncePerRequestFilter {
      * Paths that are not tenant-scoped. Webhooks authenticate with an HMAC over the body instead,
      * and the docs and health endpoints are deliberately open.
      */
-    private static final List<String> UNAUTHENTICATED_PREFIXES = List.of(
-            "/api/v1/webhooks/", "/actuator/health", "/v3/api-docs", "/swagger-ui", "/error");
+    private static final List<String> UNAUTHENTICATED_PREFIXES =
+            List.of(
+                    "/api/v1/webhooks/",
+                    "/actuator/health",
+                    "/v3/api-docs",
+                    "/swagger-ui",
+                    "/error");
 
     private final ApiKeyAuthenticator authenticator;
     private final ObjectMapper objectMapper;
 
-    public ApiKeyAuthenticationFilter(ApiKeyAuthenticator authenticator, ObjectMapper objectMapper) {
+    public ApiKeyAuthenticationFilter(
+            ApiKeyAuthenticator authenticator, ObjectMapper objectMapper) {
         this.authenticator = authenticator;
         this.objectMapper = objectMapper;
     }
@@ -83,8 +89,9 @@ public class ApiKeyAuthenticationFilter extends OncePerRequestFilter {
 
     private void writeUnauthorized(HttpServletRequest request, HttpServletResponse response)
             throws IOException {
-        ProblemDetail problem = ProblemDetail.forStatusAndDetail(
-                HttpStatus.UNAUTHORIZED, "A valid " + HEADER + " header is required");
+        ProblemDetail problem =
+                ProblemDetail.forStatusAndDetail(
+                        HttpStatus.UNAUTHORIZED, "A valid " + HEADER + " header is required");
         problem.setType(URI.create(Problems.BASE_URI + "unauthorized"));
         problem.setTitle(HttpStatus.UNAUTHORIZED.getReasonPhrase());
         problem.setInstance(URI.create(request.getRequestURI()));

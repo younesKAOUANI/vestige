@@ -25,15 +25,18 @@ public final class LineNormalizer {
 
     private static final String PLACEHOLDER = "§";
 
-    private static final Pattern NUMERIC_LITERAL = Pattern.compile(
-            "\\b0[xX][0-9a-fA-F]+[lL]?\\b" // hexadecimal, tried first so it is not read as "0"
-                    + "|\\b\\d[\\d_]*(\\.[\\d_]+)?([eE][+-]?\\d+)?[fFdDlL]?\\b");
+    private static final Pattern NUMERIC_LITERAL =
+            Pattern.compile(
+                    "\\b0[xX][0-9a-fA-F]+[lL]?\\b" // hexadecimal, tried first so it is not read as
+                            // "0"
+                            + "|\\b\\d[\\d_]*(\\.[\\d_]+)?([eE][+-]?\\d+)?[fFdDlL]?\\b");
 
-    private LineNormalizer() {
-    }
+    private LineNormalizer() {}
 
-    /** @return the normalised line, or {@code null}/blank if {@code rawLine} was, since an empty
-     *     snippet carries no information a hash should pretend to summarise */
+    /**
+     * @return the normalised line, or {@code null}/blank if {@code rawLine} was, since an empty
+     *     snippet carries no information a hash should pretend to summarise
+     */
     public static String normalize(String rawLine) {
         if (rawLine == null) {
             return null;

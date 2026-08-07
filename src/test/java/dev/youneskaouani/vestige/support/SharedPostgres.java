@@ -16,15 +16,15 @@ import org.testcontainers.containers.PostgreSQLContainer;
  */
 public final class SharedPostgres {
 
-    public static final PostgreSQLContainer<?> INSTANCE = new PostgreSQLContainer<>("postgres:16-alpine")
-            .withDatabaseName("vestige")
-            .withUsername("vestige_owner")
-            .withPassword("vestige_owner_password");
+    public static final PostgreSQLContainer<?> INSTANCE =
+            new PostgreSQLContainer<>("postgres:16-alpine")
+                    .withDatabaseName("vestige")
+                    .withUsername("vestige_owner")
+                    .withPassword("vestige_owner_password");
 
     static {
         INSTANCE.start();
     }
 
-    private SharedPostgres() {
-    }
+    private SharedPostgres() {}
 }

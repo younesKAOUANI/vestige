@@ -31,8 +31,7 @@ class AuditChainVerifierTest {
     private static final UUID ORG_ID = UUID.randomUUID();
     private static final Instant NOW = Instant.parse("2026-01-01T00:00:00Z");
 
-    @Mock
-    private TriageEventRepository eventRepository;
+    @Mock private TriageEventRepository eventRepository;
 
     private AuditChainVerifier verifier;
 
@@ -62,7 +61,8 @@ class AuditChainVerifierTest {
     }
 
     @Test
-    @DisplayName("a payload edited after the fact - same stored hash, different content - is caught")
+    @DisplayName(
+            "a payload edited after the fact - same stored hash, different content - is caught")
     void detectsATamperedPayload() {
         List<TriageEvent> events = new ArrayList<>(chainOf(3));
         events.set(1, withJustification(events.get(1), "not what was actually recorded"));
@@ -77,7 +77,8 @@ class AuditChainVerifierTest {
     @DisplayName("a row spliced out from the middle breaks the link into the next one")
     void detectsAMissingLink() {
         List<TriageEvent> events = new ArrayList<>(chainOf(3));
-        events.remove(1); // sequence numbers 1 and 3 remain; 3's prev_hash no longer matches 1's entry_hash
+        events.remove(1); // sequence numbers 1 and 3 remain; 3's prev_hash no longer matches 1's
+        // entry_hash
         when(eventRepository.findAllByOrderBySequenceNumberAsc()).thenReturn(events);
 
         AuditChainVerifier.VerificationResult result = verifier.verify();
@@ -85,7 +86,10 @@ class AuditChainVerifierTest {
         assertThat(result).isEqualTo(new AuditChainVerifier.VerificationResult.Broken(1));
     }
 
-    /** A correctly-hashed chain of {@code count} events, built the same way {@code TriageEventAppender} would. */
+    /**
+     * A correctly-hashed chain of {@code count} events, built the same way {@code
+     * TriageEventAppender} would.
+     */
     private static List<TriageEvent> chainOf(int count) {
         List<TriageEvent> events = new ArrayList<>();
         String prevHash = HashChain.GENESIS_HASH;
@@ -93,30 +97,39 @@ class AuditChainVerifierTest {
             UUID issueId = UUID.randomUUID();
             Instant occurredAt = NOW.plusSeconds(sequenceNumber);
             String justification = "reason " + sequenceNumber;
-            Map<String, Object> payload = TriageEvent.canonicalPayload(
-                    issueId, "younes", IssueStatus.OPEN, IssueStatus.RESOLVED_WONT_FIX, justification, occurredAt);
+            Map<String, Object> payload =
+                    TriageEvent.canonicalPayload(
+                            issueId,
+                            "younes",
+                            IssueStatus.OPEN,
+                            IssueStatus.RESOLVED_WONT_FIX,
+                            justification,
+                            occurredAt);
             String entryHash = HashChain.entryHash(prevHash, payload);
 
-            events.add(new TriageEvent(
-                    UUID.randomUUID(),
-                    ORG_ID,
-                    issueId,
-                    sequenceNumber,
-                    "younes",
-                    IssueStatus.OPEN,
-                    IssueStatus.RESOLVED_WONT_FIX,
-                    justification,
-                    occurredAt,
-                    prevHash,
-                    entryHash));
+            events.add(
+                    new TriageEvent(
+                            UUID.randomUUID(),
+                            ORG_ID,
+                            issueId,
+                            sequenceNumber,
+                            "younes",
+                            IssueStatus.OPEN,
+                            IssueStatus.RESOLVED_WONT_FIX,
+                            justification,
+                            occurredAt,
+                            prevHash,
+                            entryHash));
             prevHash = entryHash;
         }
         return events;
     }
 
-    private static TriageEvent withJustification(TriageEvent original, String tamperedJustification) {
+    private static TriageEvent withJustification(
+            TriageEvent original, String tamperedJustification) {
         // Same id, sequence number, prev_hash and (crucially) entry_hash as the original - exactly
-        // what a raw UPDATE bypassing V4's trigger would leave: the stored hash no longer matches the
+        // what a raw UPDATE bypassing V4's trigger would leave: the stored hash no longer matches
+        // the
         // payload it is supposed to attest to.
         return new TriageEvent(
                 original.getId(),

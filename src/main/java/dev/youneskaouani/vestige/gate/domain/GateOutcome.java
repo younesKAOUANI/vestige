@@ -19,6 +19,7 @@ public record GateOutcome(String gateName, GateStatus status, List<ConditionOutc
         if (status == GateStatus.PASS) {
             return "%s passed (%d conditions)".formatted(gateName, conditions.size());
         }
-        return "%s failed (%d of %d conditions)".formatted(gateName, failures().size(), conditions.size());
+        return "%s failed (%d of %d conditions)"
+                .formatted(gateName, failures().size(), conditions.size());
     }
 }

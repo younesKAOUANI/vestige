@@ -44,8 +44,9 @@ class CanonicalJsonTest {
         payload.put("first", List.of(nested, nested));
 
         assertThat(CanonicalJson.write(payload))
-                .isEqualTo("{\"first\":[{\"a\":\"1\",\"b\":\"2\"},{\"a\":\"1\",\"b\":\"2\"}],"
-                        + "\"outer\":{\"a\":\"1\",\"b\":\"2\"}}");
+                .isEqualTo(
+                        "{\"first\":[{\"a\":\"1\",\"b\":\"2\"},{\"a\":\"1\",\"b\":\"2\"}],"
+                                + "\"outer\":{\"a\":\"1\",\"b\":\"2\"}}");
     }
 
     @Test
@@ -65,7 +66,8 @@ class CanonicalJsonTest {
     @Test
     @DisplayName("keeps non-ASCII characters literal rather than escaping them")
     void keepsUnicodeLiteral() {
-        assertThat(CanonicalJson.write(Map.of("actor", "Genève"))).isEqualTo("{\"actor\":\"Genève\"}");
+        assertThat(CanonicalJson.write(Map.of("actor", "Genève")))
+                .isEqualTo("{\"actor\":\"Genève\"}");
     }
 
     @Test
@@ -80,7 +82,8 @@ class CanonicalJsonTest {
         payload.put("d", new BigDecimal("1.500"));
 
         assertThat(CanonicalJson.write(payload))
-                .isEqualTo("{\"b\":true,\"d\":1.5,\"i\":42,\"l\":9000000000,\"n\":null,\"s\":\"x\"}");
+                .isEqualTo(
+                        "{\"b\":true,\"d\":1.5,\"i\":42,\"l\":9000000000,\"n\":null,\"s\":\"x\"}");
     }
 
     @Test

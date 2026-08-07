@@ -29,11 +29,9 @@ class TriageServiceTest {
     private static final UUID ORG_ID = UUID.randomUUID();
     private static final Instant NOW = Instant.parse("2026-01-01T00:00:00Z");
 
-    @Mock
-    private IssueRepository issueRepository;
+    @Mock private IssueRepository issueRepository;
 
-    @Mock
-    private TriageEventAppender appender;
+    @Mock private TriageEventAppender appender;
 
     private TriageService service;
 
@@ -48,25 +46,53 @@ class TriageServiceTest {
         UUID issueId = UUID.randomUUID();
         when(issueRepository.findById(issueId)).thenReturn(Optional.of(openIssue(issueId)));
 
-        Issue result = service.applyTriage(
-                ORG_ID, issueId, IssueStatus.RESOLVED_WONT_FIX, "younes", "accepted risk", NOW);
+        Issue result =
+                service.applyTriage(
+                        ORG_ID,
+                        issueId,
+                        IssueStatus.RESOLVED_WONT_FIX,
+                        "younes",
+                        "accepted risk",
+                        NOW);
 
         assertThat(result.getStatus()).isEqualTo(IssueStatus.RESOLVED_WONT_FIX);
         verify(appender)
-                .append(ORG_ID, issueId, "younes", IssueStatus.OPEN, IssueStatus.RESOLVED_WONT_FIX, "accepted risk", NOW);
+                .append(
+                        ORG_ID,
+                        issueId,
+                        "younes",
+                        IssueStatus.OPEN,
+                        IssueStatus.RESOLVED_WONT_FIX,
+                        "accepted risk",
+                        NOW);
     }
 
     @Test
-    @DisplayName("§8: FALSE_POSITIVE/WONT_FIX require a justification, blank or absent both rejected")
+    @DisplayName(
+            "§8: FALSE_POSITIVE/WONT_FIX require a justification, blank or absent both rejected")
     void requiresAJustificationToSilenceAnIssue() {
         UUID issueId = UUID.randomUUID();
         when(issueRepository.findById(issueId)).thenReturn(Optional.of(openIssue(issueId)));
 
-        assertThatThrownBy(() -> service.applyTriage(
-                        ORG_ID, issueId, IssueStatus.RESOLVED_FALSE_POSITIVE, "younes", null, NOW))
+        assertThatThrownBy(
+                        () ->
+                                service.applyTriage(
+                                        ORG_ID,
+                                        issueId,
+                                        IssueStatus.RESOLVED_FALSE_POSITIVE,
+                                        "younes",
+                                        null,
+                                        NOW))
                 .isInstanceOf(Problems.BadRequest.class);
-        assertThatThrownBy(() -> service.applyTriage(
-                        ORG_ID, issueId, IssueStatus.RESOLVED_FALSE_POSITIVE, "younes", "   ", NOW))
+        assertThatThrownBy(
+                        () ->
+                                service.applyTriage(
+                                        ORG_ID,
+                                        issueId,
+                                        IssueStatus.RESOLVED_FALSE_POSITIVE,
+                                        "younes",
+                                        "   ",
+                                        NOW))
                 .isInstanceOf(Problems.BadRequest.class);
         verifyNoInteractions(appender);
     }
@@ -97,7 +123,10 @@ class TriageServiceTest {
         UUID issueId = UUID.randomUUID();
         when(issueRepository.findById(issueId)).thenReturn(Optional.of(openIssue(issueId)));
 
-        assertThatThrownBy(() -> service.applyTriage(ORG_ID, issueId, IssueStatus.OPEN, "younes", null, NOW))
+        assertThatThrownBy(
+                        () ->
+                                service.applyTriage(
+                                        ORG_ID, issueId, IssueStatus.OPEN, "younes", null, NOW))
                 .isInstanceOf(Problems.Conflict.class);
         verifyNoInteractions(appender);
     }
@@ -108,8 +137,15 @@ class TriageServiceTest {
         UUID issueId = UUID.randomUUID();
         when(issueRepository.findById(issueId)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> service.applyTriage(
-                        ORG_ID, issueId, IssueStatus.RESOLVED_WONT_FIX, "younes", "why", NOW))
+        assertThatThrownBy(
+                        () ->
+                                service.applyTriage(
+                                        ORG_ID,
+                                        issueId,
+                                        IssueStatus.RESOLVED_WONT_FIX,
+                                        "younes",
+                                        "why",
+                                        NOW))
                 .isInstanceOf(Problems.NotFound.class);
         verifyNoInteractions(appender);
     }

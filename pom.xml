@@ -196,7 +196,12 @@
         <version>${spotless.version}</version>
         <configuration>
           <java>
-            <googleJavaFormat/>
+            <!-- AOSP, not google-java-format's default: this codebase is written at 4-space
+                 indentation throughout, which is the variant that matches it. The default 2-space
+                 style would reindent every file in the tree. -->
+            <googleJavaFormat>
+              <style>AOSP</style>
+            </googleJavaFormat>
             <removeUnusedImports/>
             <importOrder/>
             <trimTrailingWhitespace/>
