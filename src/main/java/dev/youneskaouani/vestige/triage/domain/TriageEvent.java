@@ -8,6 +8,7 @@ import jakarta.persistence.Enumerated;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -90,7 +91,13 @@ public class TriageEvent {
         this.fromStatus = fromStatus;
         this.toStatus = toStatus;
         this.justification = justification;
-        this.occurredAt = occurredAt;
+        // Stored at the precision PostgreSQL's timestamptz actually keeps, so that what is written
+        // is byte-for-byte what comes back. Handing it a nanosecond value instead would leave the
+        // database to *round* it to microseconds while canonicalPayload below *truncates* - the two
+        // disagree whenever the sub-microsecond remainder is 500ns or more, which breaks the chain
+        // for roughly half of all events and leaves the other half looking fine. Normalising once,
+        // here, is what makes that class of bug impossible rather than intermittent.
+        this.occurredAt = occurredAt.truncatedTo(ChronoUnit.MICROS);
         this.prevHash = prevHash;
         this.entryHash = entryHash;
     }
@@ -103,6 +110,17 @@ public class TriageEvent {
      * matching §6's {@code {issue_id, actor_id, from_status, to_status, justification,
      * occurred_at}} one for one (renaming {@code actor_id} to {@code actor} - see the class
      * javadoc).
+     *
+     * <p><b>{@code occurredAt} is truncated to microseconds before it is hashed, and that is load
+     * bearing.</b> The two callers above see the same instant at different precisions: the appender
+     * hashes the {@link Instant} it was handed, where {@code Instant.now()} carries nanoseconds on
+     * a modern JVM, while the verifier hashes what came back from PostgreSQL, whose {@code
+     * timestamptz} resolves only to microseconds. Hashing the raw value therefore produces one
+     * digest on the way in and a different one on the way out for the same event - every chain
+     * would report itself broken at index 0, permanently, and the tamper-evidence in §6 would be
+     * indistinguishable from an actual tamper. Truncating here pins the pre-image to the precision
+     * the store can actually round-trip, so the digest is a property of the event rather than of
+     * which side of the database it was computed on.
      */
     public static Map<String, Object> canonicalPayload(
             UUID issueId, String actor, IssueStatus fromStatus, IssueStatus toStatus, String justification,
@@ -113,7 +131,7 @@ public class TriageEvent {
         payload.put("fromStatus", fromStatus.name());
         payload.put("toStatus", toStatus.name());
         payload.put("justification", justification);
-        payload.put("occurredAt", occurredAt.toString());
+        payload.put("occurredAt", occurredAt.truncatedTo(ChronoUnit.MICROS).toString());
         return payload;
     }
 
