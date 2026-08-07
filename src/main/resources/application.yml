@@ -51,7 +51,12 @@ vestige:
     max-report-bytes: 200MB
     finding-batch-size: 1000
   worker:
-    poll-interval: 500ms
+    # ISO-8601, not the "500ms" spelling the other durations in this block use, and it has to stay
+    # that way: this one is read by @Scheduled(fixedDelayString) on OutboxWorker#pollOnce, which
+    # accepts only an ISO-8601 duration or a bare count of milliseconds. It does not go through the
+    # relaxed Duration binding @ConfigurationProperties applies to the rest of these. Spelled
+    # "500ms" the application fails to start, rather than failing at the first poll.
+    poll-interval: PT0.5S
     lease-duration: 2m
     max-attempts: 5
     retry-base-delay: 250ms

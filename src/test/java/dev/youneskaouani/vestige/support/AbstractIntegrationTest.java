@@ -40,6 +40,8 @@ public abstract class AbstractIntegrationTest {
 
         // A background poll racing a test's own manual transactions is a bug waiting to happen -
         // OutboxSkipLockedConcurrencyIT in particular claims jobs by hand and must be the only claimant.
-        registry.add("vestige.worker.poll-interval", () -> "24h");
+        // ISO-8601 for the same reason application.yml uses it: @Scheduled(fixedDelayString) parses
+        // this value itself and rejects "24h".
+        registry.add("vestige.worker.poll-interval", () -> "PT24H");
     }
 }
