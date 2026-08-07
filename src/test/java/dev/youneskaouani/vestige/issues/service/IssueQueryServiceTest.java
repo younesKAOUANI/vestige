@@ -29,6 +29,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 
 /**
  * Exercises the one piece of judgement in this class - resolving {@code since-run} to an instant,
@@ -59,7 +60,7 @@ class IssueQueryServiceTest {
         UUID projectId = UUID.randomUUID();
         Pageable pageable = PageRequest.of(0, 25);
         Page<Issue> expected = new PageImpl<>(List.of(openIssue()));
-        when(issueRepository.findAll(any(), eq(pageable))).thenReturn(expected);
+        when(issueRepository.findAll(anySpecification(), eq(pageable))).thenReturn(expected);
 
         Page<Issue> result = service.search(projectId, null, null, null, null, pageable);
 
@@ -75,13 +76,13 @@ class IssueQueryServiceTest {
         Pageable pageable = PageRequest.of(0, 25);
         Page<Issue> expected = new PageImpl<>(List.of());
         when(runRepository.findById(sinceRunId)).thenReturn(Optional.of(runCreatedAt(sinceRunId, NOW)));
-        when(issueRepository.findAll(any(), eq(pageable))).thenReturn(expected);
+        when(issueRepository.findAll(anySpecification(), eq(pageable))).thenReturn(expected);
 
         Page<Issue> result = service.search(projectId, null, null, null, sinceRunId, pageable);
 
         assertThat(result).isSameAs(expected);
         verify(runRepository).findById(sinceRunId);
-        verify(issueRepository).findAll(any(), eq(pageable));
+        verify(issueRepository).findAll(anySpecification(), eq(pageable));
     }
 
     @Test
@@ -94,7 +95,18 @@ class IssueQueryServiceTest {
 
         assertThatThrownBy(() -> service.search(projectId, null, null, null, sinceRunId, pageable))
                 .isInstanceOf(Problems.NotFound.class);
-        verify(issueRepository, never()).findAll(any(), eq(pageable));
+        verify(issueRepository, never()).findAll(anySpecification(), eq(pageable));
+    }
+
+    /**
+     * {@code IssueRepository} inherits {@code findAll(Specification, Pageable)} from
+     * {@link Specification}'s executor and {@code findAll(Example, Pageable)} from the
+     * query-by-example one, so a bare {@code any()} does not tell javac which overload is meant.
+     * Pinning the type parameter picks the Specification overload - which is the one the service
+     * actually calls, so the verification is no weaker for being explicit.
+     */
+    private static Specification<Issue> anySpecification() {
+        return any();
     }
 
     private static Issue openIssue() {
