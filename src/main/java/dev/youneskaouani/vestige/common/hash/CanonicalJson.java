@@ -42,21 +42,38 @@ public final class CanonicalJson {
         return out.toString();
     }
 
+    // An if/else ladder rather than a pattern switch: the language level here is 17
+    // (maven.compiler.release), and patterns in switch are only final in 21. The ordering is the
+    // same as the switch it replaces, and it matters in one place - Enum<?> is tested after the
+    // concrete types so that a hypothetical enum implementing Collection cannot be caught by the
+    // wrong arm.
     private static void writeValue(Object value, StringBuilder out) {
-        switch (value) {
-            case null -> out.append("null");
-            case String s -> writeString(s, out);
-            case Boolean b -> out.append(b.booleanValue() ? "true" : "false");
-            case Integer i -> out.append(i.intValue());
-            case Long l -> out.append(l.longValue());
-            case Short s -> out.append(s.shortValue());
-            case Byte b -> out.append(b.byteValue());
-            case BigInteger bi -> out.append(bi.toString());
-            case BigDecimal bd -> out.append(bd.stripTrailingZeros().toPlainString());
-            case Map<?, ?> map -> writeObject(map, out);
-            case Collection<?> collection -> writeArray(collection, out);
-            case Enum<?> e -> writeString(e.name(), out);
-            default -> throw new IllegalArgumentException(
+        if (value == null) {
+            out.append("null");
+        } else if (value instanceof String s) {
+            writeString(s, out);
+        } else if (value instanceof Boolean b) {
+            out.append(b.booleanValue() ? "true" : "false");
+        } else if (value instanceof Integer i) {
+            out.append(i.intValue());
+        } else if (value instanceof Long l) {
+            out.append(l.longValue());
+        } else if (value instanceof Short s) {
+            out.append(s.shortValue());
+        } else if (value instanceof Byte b) {
+            out.append(b.byteValue());
+        } else if (value instanceof BigInteger bi) {
+            out.append(bi.toString());
+        } else if (value instanceof BigDecimal bd) {
+            out.append(bd.stripTrailingZeros().toPlainString());
+        } else if (value instanceof Map<?, ?> map) {
+            writeObject(map, out);
+        } else if (value instanceof Collection<?> collection) {
+            writeArray(collection, out);
+        } else if (value instanceof Enum<?> e) {
+            writeString(e.name(), out);
+        } else {
+            throw new IllegalArgumentException(
                     "Unsupported type in canonical JSON payload: " + value.getClass().getName());
         }
     }
