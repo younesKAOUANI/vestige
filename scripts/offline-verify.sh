@@ -23,6 +23,12 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 OUT=${OUT:-"$ROOT/build-offline"}
 JARS=${JARS:-/usr/share/java}
+# Must track <maven.compiler.release> in pom.xml. It was hardcoded to 21 while the real build
+# targeted 17, which is precisely how two Java 21 pattern switches reached a repository whose stated
+# language level is 17: this script was the only compiler that had ever seen those files, and it
+# accepted more than Maven does. A verification script more permissive than the build it stands in
+# for does not verify much.
+RELEASE=${RELEASE:-17}
 
 CP="$JARS/junit-platform-console-standalone.jar:$JARS/assertj-core.jar:$JARS/jackson-databind.jar:$JARS/jackson-core.jar:$JARS/jackson-annotations.jar"
 
@@ -102,12 +108,12 @@ TEST_SRC=$(resolve "$ROOT/src/test/java/dev/youneskaouani/vestige" "${TEST_ENTRI
 
 echo "== compiling main ($(echo "$MAIN_SRC" | wc -l) files)"
 # shellcheck disable=SC2086
-javac -Xlint:all,-serial,-processing -Werror --release 21 -d "$OUT/classes" -cp "$CP" $MAIN_SRC
+javac -Xlint:all,-serial,-processing -Werror --release "$RELEASE" -d "$OUT/classes" -cp "$CP" $MAIN_SRC
 
 if [ -n "$TEST_SRC" ]; then
   echo "== compiling tests ($(echo "$TEST_SRC" | wc -l) files)"
   # shellcheck disable=SC2086
-  javac --release 21 -d "$OUT/test-classes" -cp "$CP:$OUT/classes" $TEST_SRC
+  javac --release "$RELEASE" -d "$OUT/test-classes" -cp "$CP:$OUT/classes" $TEST_SRC
 
   echo "== running tests"
   java -jar "$JARS/junit-platform-console-standalone.jar" execute \
