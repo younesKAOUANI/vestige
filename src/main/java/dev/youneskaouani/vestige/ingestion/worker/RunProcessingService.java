@@ -102,8 +102,21 @@ public class RunProcessingService {
                         batch -> {
                             List<Finding> entities =
                                     batch.stream().map(raw -> toEntity(run, raw, now)).toList();
-                            findingRepository.saveAll(entities);
-                            persisted.addAll(entities);
+                            // Keep what saveAll returns, not what went in. Finding's id is assigned
+                            // rather than generated and it carries no @Version, so Spring Data
+                            // reads
+                            // it as already-persistent and routes save through EntityManager#merge
+                            // -
+                            // which copies the state onto a managed instance and leaves the
+                            // argument
+                            // detached. Collecting the arguments here would hand
+                            // IssueTrackingService
+                            // detached findings, and its finding.assignToIssue(...) would then be a
+                            // write to an object nothing is tracking: the rows insert cleanly, but
+                            // issue_id and match_rung stay null forever. The next run on the branch
+                            // is where that surfaces, when candidateFor cannot find the finding its
+                            // own issue points at.
+                            persisted.addAll(findingRepository.saveAll(entities));
                         });
         run.describeAnalyser(report.analyserName(), report.analyserVersion(), now);
 
