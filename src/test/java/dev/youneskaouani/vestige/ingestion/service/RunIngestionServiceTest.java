@@ -137,7 +137,7 @@ class RunIngestionServiceTest {
         when(runRepository.findByOrganizationIdAndIdempotencyKey(ORG_ID, "client-key")).thenReturn(Optional.of(existing));
 
         RunIngestionService.SubmissionResult result = service.submit(
-                ORG_ID, "github", "acme", "widgets", "main", "commit123", "client-key", null, SARIF, NOW);
+                ORG_ID, "github", "acme", "widgets", "main", "commit123", null, "client-key", SARIF, NOW);
 
         assertThat(result).isInstanceOf(RunIngestionService.SubmissionResult.Duplicate.class);
         assertThat(result.run()).isSameAs(existing);
@@ -161,7 +161,7 @@ class RunIngestionServiceTest {
         when(runRepository.findByOrganizationIdAndIdempotencyKey(ORG_ID, "client-key")).thenReturn(Optional.of(existing));
 
         assertThatThrownBy(() -> service.submit(
-                        ORG_ID, "github", "acme", "widgets", "main", "commit123", "client-key", null, SARIF, NOW))
+                        ORG_ID, "github", "acme", "widgets", "main", "commit123", null, "client-key", SARIF, NOW))
                 .isInstanceOf(Problems.Conflict.class);
     }
 
