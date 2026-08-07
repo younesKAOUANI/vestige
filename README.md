@@ -1,5 +1,7 @@
 # Vestige
 
+[![CI](https://github.com/younesKAOUANI/vestige/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/younesKAOUANI/vestige/actions/workflows/ci.yml)
+
 *(n.)* — a trace of something that once existed.
 
 A multi-tenant service that ingests static-analysis reports (SARIF) from CI, tracks
@@ -272,9 +274,9 @@ docker compose up --build
 Builds the app (`Dockerfile`, multi-stage: `maven:3.9-eclipse-temurin-17` →
 `eclipse-temurin:17-jre-alpine`, non-root), starts Postgres 16, waits for its
 healthcheck, runs Flyway automatically on boot, and serves the API at
-`http://localhost:8080` (`/actuator/health` is the readiness probe). See the
-[note below](#a-note-on-how-this-was-built) for why this exact command has not been
-run inside the sandbox this repository was authored in.
+`http://localhost:8080` (`/actuator/health` is the readiness probe). Verified end to
+end: Flyway applies all four migrations, the application starts as `vestige_app`, and
+`/actuator/health` returns `{"status":"UP"}`.
 
 Flyway connects as the database owner (`postgres`) to run migrations, including
 `CREATE ROLE vestige_app` and `FORCE ROW LEVEL SECURITY`; the application itself
@@ -334,7 +336,7 @@ mvn verify -Pintegration    # + Testcontainers ITs against a real Postgres
 scripts/offline-verify.sh   # the dependency-free core, no Maven/network required at all
 ```
 
-- **Unit tests** (`src/test/java/**/*Test.java`, 22 classes / 143 `@Test` methods)
+- **Unit tests** (`src/test/java/**/*Test.java`, 23 classes / 153 `@Test` methods)
   mock every collaborator with Mockito and assert behaviour with AssertJ — no Spring
   context, no database. The dependency-free subset of these (13 classes / 110
   methods: the matcher, the SARIF reader, the hash chain, the gate evaluator, the
@@ -383,15 +385,52 @@ Spring/JPA/servlet-dependent class (everything under a `service`, `web`, `api`, 
 by hand against the actual entity/repository signatures it calls, but was not, and
 could not be, compiled inside that sandbox.
 
-`.github/workflows/ci.yml` is written to run the real thing on GitHub-hosted runners,
-which have both unrestricted Maven Central access and Docker preinstalled: `mvn test`
-(unit + matcher-corpus gate), `mvn verify -Pintegration` (the three Testcontainers
-ITs), and the frontend build, as three separate jobs. That workflow is the actual
-verification story for this repository going forward, and is expected — not merely
-hoped — to pass, having been written against the same interfaces `scripts/offline-verify.sh`
-already proved out and the same manual cross-referencing described above; it simply
-has not been *run* yet, because doing so needs a real push to a GitHub repository this
-exercise did not include.
+`.github/workflows/ci.yml` runs the real thing on GitHub-hosted runners, which have
+both unrestricted Maven Central access and Docker preinstalled: `mvn test` (unit +
+matcher-corpus gate), `mvn verify -Pintegration` (the three Testcontainers ITs), and
+the frontend build, as three separate jobs. The badge at the top of this file is that
+workflow.
+
+### What the first real build actually found
+
+An earlier draft of this section predicted that workflow was "expected — not merely
+hoped — to pass." It did not. That prediction is left in the history on purpose,
+because the gap between it and what happened is the most useful thing in this
+repository.
+
+The 91 classes that had never met a compiler contained six defects, and the
+interesting part is that only one of them was the kind of thing careful reading
+catches:
+
+- Two **compile errors** — pattern switches, a Java 21 feature, in a tree whose
+  language level is 17. `scripts/offline-verify.sh` had been compiling with
+  `--release 21`, so the one tool standing in for the build was more permissive than
+  the build. It now tracks `maven.compiler.release`.
+- **`SarifReader` was never declared as a bean**, so the context could not start.
+- **`poll-interval: 500ms`** — valid for `@ConfigurationProperties`' relaxed `Duration`
+  binding, rejected by `@Scheduled(fixedDelayString)`, which parses its own value.
+- **The tenant context never reached any transaction.** It was published at connection
+  checkout with `set_config(..., is_local => true)`, while the connection was still in
+  autocommit — so it belonged to its own implicit statement-transaction and was
+  discarded before the real one began. Every RLS policy evaluated against NULL. This
+  is the one worth dwelling on: it *failed closed*, exactly as §5.2 argues it should,
+  so it leaked nothing and looked like a working system returning empty results.
+- **The outbox worker escalated too late**, inside a `@Transactional` method whose
+  connection had already been checked out and told `vestige.worker = off`. It claimed
+  zero jobs, silently, forever.
+- **Audit hashes were computed at nanosecond precision** and re-verified against
+  PostgreSQL's microseconds. Because the database *rounds* where `truncatedTo`
+  *truncates*, this diverged only when the sub-microsecond remainder was ≥ 500ns —
+  so roughly half of all chains reported themselves broken at index 0 and the rest
+  looked healthy. `GET /api/v1/audit/verify` was indistinguishable from a real tamper.
+
+Four of the six are the same shape: code that reads correctly, and whose correctness
+depends on *when* something happens relative to a framework's lifecycle. That is not a
+category reading finds. The matcher and the corpus — the parts `offline-verify.sh`
+could actually execute — needed no changes at all, and still report 32 cases, 0%
+false-split, 0% false-merge. The lesson is not that the untested code was written
+carelessly; it is that "carefully reasoned" and "verified" are different claims, and
+only one of them is worth anything.
 
 ## Tech stack
 
