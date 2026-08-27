@@ -8,10 +8,11 @@ A multi-tenant service that ingests static-analysis reports (SARIF) from CI, tra
 the identity of each finding as the code beneath it changes, and produces an
 auditable record of every triage decision a team makes.
 
-Built by [Younes Kaouani](https://youneskaouani.dev) as a portfolio project for a
-Graduate Software Engineer application to Sonar (SonarSource), Geneva. The full
-design brief is frozen at [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md); this README
-is the front door, not a second copy of it.
+Built by [Younes Kaouani](https://youneskaouani.dev) to work through the problem most
+tooling in this space gets wrong: a finding is not a line number, and treating it as
+one is what teaches teams to ignore their analyser. The full design brief is frozen at
+[`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md); this README is the front door, not a
+second copy of it.
 
 ---
 
@@ -436,7 +437,7 @@ only one of them is worth anything.
 
 | Layer | Choice | Why |
 |---|---|---|
-| Language | Java 17 (built with 21, targets 17 release) · Spring Boot 3.3 | Ecosystem match for the target reader; mature static-analysis tooling |
+| Language | Java 17 (built with 21, targets 17 release) · Spring Boot 3.3 | Mature static-analysis tooling, and a deployment story that is boring on purpose |
 | Persistence | PostgreSQL 16 | Row-level security, `SKIP LOCKED`, `jsonb` for the gate's computed result document |
 | Access | Spring Data JPA | See [Roadmap](#roadmap--everything-this-is-honest-about-not-doing) — §9 named jOOQ for the matcher's bulk paths; the matcher ended up operating in memory over data JPA already loaded, so jOOQ was never actually pulled in |
 | Migrations | Flyway | Versioned, reviewable, no auto-DDL |

@@ -341,7 +341,7 @@ OpenAPI 3.1 generated from annotations, served at `/swagger-ui`.
 
 | Layer | Choice | Reason |
 |---|---|---|
-| Language | **Java 17**, Spring Boot 3.3 | Ecosystem match for the target reader; strong static-analysis tooling |
+| Language | **Java 17**, Spring Boot 3.3 | Strong static-analysis tooling, and the ecosystem most SARIF-emitting analysers are written against |
 | Persistence | **PostgreSQL 16** | RLS, `SKIP LOCKED`, JSONB for raw SARIF payloads, generated columns |
 | Access | Spring Data JPA + jOOQ for the matcher's bulk paths | JPA for CRUD clarity; jOOQ where set-based SQL wins |
 | Migrations | Flyway | Versioned, reviewable, no auto-DDL |
